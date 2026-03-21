@@ -1,0 +1,17 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "infoNest"
+  ],
+  "author": "Mikołaj Melnyk",
+  "license": "MIT License",
+  "description": "infoNest backend",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
