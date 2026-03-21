@@ -1,0 +1,127 @@
+// schema.prisma
+
+// new prisma - must use pg in 7+ version
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  
+}
+
+// Users
+model User {
+  id        String      @id @default(cuid())
+  name      String
+  email     String      @unique
+  password  String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // relations
+  workspaces UserWorkspace[]
+  documents  Document[]
+  revisions  Revision[]
+  files      File[]
+
+  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+}
+
+
+model Workspace {
+  id          String      @id @default(cuid())
+  name        String
+  ownerId     String
+  visibility  WorkspaceVisibility @default(PRIVATE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner       User        @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  users       UserWorkspace[]
+  categories  Category[]
+}
+
+model UserWorkspace {
+  id          String      @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role        @default(Owner) // Owner, Editor, Viewer, Admin, Guest
+  createdAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, workspaceId])
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String
+  workspaceId String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  documents   Document[]
+}
+
+model Document {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  categoryId  String
+  ownerId     String
+  visibility  DocumentVisibility @default(PRIVATE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  category    Category    @relation(fields: [categoryId], references: [id])
+  owner       User        @relation(fields: [ownerId], references: [id])
+  files       File[]
+  revisions   Revision[]
+}
+
+model File {
+  id          String      @id @default(cuid())
+  documentId  String
+  ownerId     String
+  fileName    String
+  url         String
+  size        Int
+  createdAt   DateTime    @default(now())
+
+  document    Document    @relation(fields: [documentId], references: [id])
+  owner       User        @relation(fields: [ownerId], references: [id])
+}
+
+model Revision {
+  id          String      @id @default(cuid())
+  documentId  String
+  editorId    String
+  content     String
+  createdAt   DateTime    @default(now())
+
+  document    Document    @relation(fields: [documentId], references: [id])
+  editor      User        @relation(fields: [editorId], references: [id])
+}
+
+// ENUMS
+
+enum Role {
+  Owner
+  Editor
+  Viewer
+  Admin
+  Guest
+}
+
+enum DocumentVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum WorkspaceVisibility {
+  PRIVATE
+  PUBLIC
+}

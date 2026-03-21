@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "allowJs": true
+  },
+  // for all ts files in the project, including prisma.config.ts
+  "include": ["**/*.ts", "prisma.config.ts"]
+}

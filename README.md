@@ -17,7 +17,7 @@ This is an initial setup, and the implementation details may evolve as the proje
 
 - **Node.js**
 - **Express.js**
-- **Database: NeonDB - PostgreSQL**
+- **Database: NeonDB - PostgreSQL | Prisma ORM**
 - RESTful API design
 - Basic security measures
 
