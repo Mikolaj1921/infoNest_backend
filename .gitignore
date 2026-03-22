@@ -64,3 +64,6 @@ coverage/
 *.tar.gz
 *.zip
 *.7z
+
+# test files (linters and other)
+src/test.js
