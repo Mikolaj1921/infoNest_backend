@@ -72,12 +72,16 @@ The backend is built as a **RESTful API** and is responsible for:
 
 ## Technology Stack
 
-- Node.js
-- Express.js
-- PostgreSQL (NeonDB)
-- Prisma ORM
-- Cloudflare R2 (file storage)
-- REST API
+- Runtime: Node.js (v20+)
+- Framework: Express.js (v5.2.1)
+- Language: JavaScript / TypeScript (for Prisma types)
+- Database: PostgreSQL (NeonDB)
+- ORM: Prisma
+- Storage: Cloudflare R2 (S3-compatible)
+- Security: Helmet.js, CORS, Bcrypt.js, JSON Web Tokens (JWT)
+- Validation: Zod
+- Code Quality: ESLint (v10), Prettier, Husky, lint-staged, Commitlint
+- Dev Tools: Nodemon, Morgan (logging)
 
 ---
 
@@ -88,7 +92,7 @@ The backend is built as a **RESTful API** and is responsible for:
 
 ---
 
-## 🇵🇱 Opis
+## pl: Opis
 
 **infoNest** to nowoczesna, skalowalna platforma służąca do organizowania, przechowywania oraz współdzielenia uporządkowanych informacji, takich jak dokumenty, workspace’y oraz zasoby wiedzy. Celem projektu jest zapewnienie użytkownikom elastycznego środowiska do zarządzania treścią, współpracy oraz bezpiecznego przechowywania danych (w tym plików).
 
@@ -159,12 +163,16 @@ Backend został zaprojektowany jako **REST API** i odpowiada za:
 
 ## Technologie
 
-- Node.js
-- Express.js
-- PostgreSQL (NeonDB)
-- Prisma ORM
-- Cloudflare R2
-- REST API
+- Runtime: Node.js (v20+)
+- Framework: Express.js (v5.2.1)
+- Język: JavaScript / TypeScript (dla typów Prisma)
+- Baza danych: PostgreSQL (NeonDB)
+- ORM: Prisma
+- Storage: Cloudflare R2
+- Bezpieczeństwo: Helmet.js, CORS, Bcrypt.js, JWT
+- Walidacja: Zod
+- Jakość kodu(lintery): ESLint (v10), Prettier, Husky, lint-staged, Commitlint
+- Narzędzia: Nodemon, Morgan (logowanie)
 
 ---
 
@@ -172,6 +180,98 @@ Backend został zaprojektowany jako **REST API** i odpowiada za:
 
 - Panel admina
 - Rozbudowany system uprawnień
+
+---
+
+# ua: Огляд
+
+**infoNest** — це сучасна, масштабована платформа для організації, зберігання та спільної роботи над структурованою інформацією, такою як документи, робочі простори (workspaces) та бази знань. Мета проєкту — надати користувачам гнучке середовище для управління контентом, співпраці та безпечного зберігання як легких, так і важких даних (файлів).
+
+Цей репозиторій містить **бекенд-шар** застосунку, який відповідає за бізнес-логіку, управління даними та взаємодію з фронтендом і зовнішніми сервісами.
+
+---
+
+## Обов'язки бекенду
+
+Бекенд побудований як **REST API** і відповідає за:
+
+### Автентифікація та авторизація
+
+- Реєстрація та вхід користувачів
+- Безпечне хешування паролів
+- Контроль доступу на основі ролей (RBAC)
+- Дозволи на рівні workspace (Owner, Admin, Editor, Viewer, Guest)
+
+### Управління workspace та контентом
+
+- Створення та управління workspace
+- Призначення користувачів з різними ролями
+- Управління категоріями та документами
+- Підтримка приватної та публічної видимості
+
+### Система документів
+
+- Створення, редагування та видалення документів
+- Організація документів за категоріями
+- Відстеження власника
+- Підтримка версійності (revisions)
+
+### Робота з файлами
+
+- Зберігання метаданих у базі даних
+- Інтеграція з хмарним сховищем (Cloudflare R2)
+- Прив'язка файлів до документів
+- Зберігання важких даних поза БД (через URL)
+
+### Система версійності
+
+- Відстеження змін документів
+- Зберігання історії ревізій
+- Можливість розширення (rollback, порівняння версій)
+
+### Шар даних
+
+- Prisma ORM для схем і запитів
+- Валідація та типізація
+- PostgreSQL (NeonDB)
+
+### Безпека
+
+- Валідація вхідних даних
+- Захист від SQL-ін’єкцій (через ORM)
+- Структурована обробка помилок
+
+---
+
+## Архітектура
+
+- **Routes** – API ендпоінти
+- **Controllers** – обробка запитів
+- **Services** – бізнес-логіка
+- **Config** – конфігурація середовища та БД
+- **Prisma** – схема та клієнт БД
+
+---
+
+## Технології
+
+- Runtime: Node.js (v20+)
+- Framework: Express.js (v5.2.1)
+- Мова: JavaScript / TypeScript (для Prisma)
+- База даних: PostgreSQL (NeonDB)
+- ORM: Prisma
+- Storage: Cloudflare R2
+- Безпека: Helmet.js, CORS, Bcrypt.js, JWT
+- Валідація: Zod
+- Якість коду: ESLint, Prettier, Husky, lint-staged, Commitlint
+- Інструменти: Nodemon, Morgan
+
+---
+
+## Плани розвитку
+
+- Адмін-панель
+- Розширена система прав доступу
 
 ---
 
