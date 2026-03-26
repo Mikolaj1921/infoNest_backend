@@ -1,7 +1,9 @@
 // this is the entry point of the application, it will start the server and connect to the database
 
-require('dotenv').config(); // load environment variables from .env
+//require('dotenv').config(); // load environment variables from .env
 const morgan = require('morgan'); // HTTP request logger middleware
+
+const config = require('./config/index'); // load validated config
 
 const app = require('./app'); // load app
 const prisma = require('./config/db'); // load database connection
@@ -19,7 +21,7 @@ app.use(morgan('dev'));
     console.log('Connected to the database successfully');
 
     // server run
-    const PORT = process.env.PORT || 3000; // default port - 3000 or from env
+    const PORT = config.PORT || 3000; // default port - 3000 or from env
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });

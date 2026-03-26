@@ -67,3 +67,6 @@ coverage/
 
 # test files (linters and other)
 src/test.js
+
+# other
+*README.txt
