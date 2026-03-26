@@ -5,8 +5,10 @@ const express = require('express'); // user Express
 // ua: cors - для обробки крос-доменних запитів, helmet - для безпеки HTTP заголовків
 const cors = require('cors'); // use CORS for cross-origin requests
 const helmet = require('helmet'); // use Helmet for security headers
-const config = require('./config/index'); // load validated config
-//const routes = require('./routes'); // connect to routes
+const cookieParser = require('cookie-parser'); // parse cookie headers
+const rateLimit = require('express-rate-limit'); // limit repeated requests
+// ua: імпорт конфігурації - по валідованим змінним енв
+const config = require('./config/index'); // load our validated config
 
 const app = express();
 
@@ -14,20 +16,30 @@ const app = express();
 app.set('trust proxy', 1); // trust first proxy
 
 // Middleware
-app.use(helmet()); // secure app by setting various HTTP headers
+
+// ua: обмеження кількості запитів (100 за 15 хв) для захисту від Brute-force
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use('/api', limiter);
+
+// ua: базовий захист заголовків та налаштування CSP
+app.use(helmet());
+
 app.use(
   cors({
-    origin: config.CLIENT_URL || 'http://localhost:3000',
+    origin: config.CLIENT_URL, // Whitelist з конфігу
     credentials: true,
   }),
-); // allow requests from frontend and support cookies
-app.use(express.json()); // for parsing application/json
+);
 
-// Routes
-//app.use('/api', routes);
+app.use(express.json({ limit: '10kb' })); // parse JSON with size limit
+app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 
 // error handling middleware
-// eslint-disable-next-line
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something went wrong.');
