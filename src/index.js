@@ -21,7 +21,7 @@ app.use(morgan('dev'));
     console.log('Connected to the database successfully');
 
     // server run
-    const PORT = config.PORT || 3000; // default port - 3000 or from env
+    const PORT = config.PORT || 5000; // default port - 5000 or from env
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });

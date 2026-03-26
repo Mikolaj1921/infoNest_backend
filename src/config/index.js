@@ -9,7 +9,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: z.string().transform(Number).default('3000'),
+  PORT: z.string().transform(Number).default('5000'),
   DATABASE_URL: z.string().url(),
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
   SALT_ROUNDS: z.string().transform(Number).default('10'),

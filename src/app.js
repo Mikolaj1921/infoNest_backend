@@ -15,6 +15,7 @@ const app = express();
 // ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
 app.set('trust proxy', 1); // trust first proxy
 
+const healthRoutes = require('./routes/health.routes');
 // Middleware
 
 // ua: обмеження кількості запитів (100 за 15 хв) для захисту від Brute-force
@@ -37,6 +38,9 @@ app.use(
 
 app.use(express.json({ limit: '10kb' })); // parse JSON with size limit
 app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
+
+// Routes
+app.use('/api/health', healthRoutes);
 
 // error handling middleware
 // eslint-disable-next-line no-unused-vars
