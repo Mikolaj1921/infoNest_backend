@@ -43,10 +43,24 @@ app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 app.use('/api/health', healthRoutes);
 
 // error handling middleware
+// ua: глобальний обробник помилок, який приховує деталі у продакшні
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something went wrong.');
+  // check status: що прийшов, або 500 ISE - internal server error
+  const statusCode = err.statusCode || 500;
+
+  // ua: повідомлення для клієнта
+  const message = err.message || 'Something went wrong.';
+
+  // ua: logged full errror stack for debugging
+  console.error(`[ERROR] ${req.method} ${req.url} - ${err.stack}`);
+
+  res.status(statusCode).json({
+    success: false,
+    message: message,
+    // ua: stack trace тількu в режимі розробки
+    stack: config.NODE_ENV === 'development' ? err.stack : undefined,
+  });
 });
 
 module.exports = app;
