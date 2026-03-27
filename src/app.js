@@ -43,23 +43,32 @@ app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 app.use('/api/health', healthRoutes);
 
 // error handling middleware
-// ua: глобальний обробник помилок, який приховує деталі у продакшні
+// ua: глобальний обробник помилок для уніфікації відповідей API
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  // check status: що прийшов, або 500 ISE - internal server error
-  const statusCode = err.statusCode || 500;
+  // ua: встановлюємо статус-код та статус (fail/error)
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || 'error';
 
-  // ua: повідомлення для клієнта
-  const message = err.message || 'Something went wrong.';
-
-  // ua: logged full errror stack for debugging
+  // ua: логування повної помилки для розробки
   console.error(`[ERROR] ${req.method} ${req.url} - ${err.stack}`);
 
-  res.status(statusCode).json({
+  // ua: відповідь для режиму розробки
+  if (config.NODE_ENV === 'development') {
+    return res.status(err.statusCode).json({
+      success: false,
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+      error: err,
+    });
+  }
+
+  // ua: відповідь для продакшну
+  // Якщо помилка операційна - текст еррору, інакше - загальний текст
+  res.status(err.statusCode).json({
     success: false,
-    message: message,
-    // ua: stack trace тількu в режимі розробки
-    stack: config.NODE_ENV === 'development' ? err.stack : undefined,
+    message: err.isOperational ? err.message : 'Something went wrong.',
   });
 });
 
