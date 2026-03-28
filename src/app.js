@@ -7,23 +7,56 @@ const cors = require('cors'); // use CORS for cross-origin requests
 const helmet = require('helmet'); // use Helmet for security headers
 const cookieParser = require('cookie-parser'); // parse cookie headers
 const rateLimit = require('express-rate-limit'); // limit repeated requests
+const { RedisStore } = require('rate-limit-redis'); // імпорт стор
+const { createClient } = require('redis'); // Імпорт клієнт Redis
 // ua: імпорт конфігурації - по валідованим змінним енв
 const config = require('./config/index'); // load our validated config
 
+const healthRoutes = require('./routes/health.routes');
+
 const app = express();
 
-// ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
-app.set('trust proxy', 1); // trust first proxy
+// Redis settings
+let redisClient = null;
+let store = null;
 
-const healthRoutes = require('./routes/health.routes');
-// Middleware
+// Connect to Redis
+// ua: якщо треба потестити локально (додавти REDIS_URL в .env)
+if (config.NODE_ENV === 'production' || process.env.REDIS_URL) {
+  redisClient = createClient({
+    url: config.REDIS_URL,
+  });
 
-// ua: обмеження кількості запитів (100 за 15 хв) для захисту від Brute-force
+  redisClient.on('error', (err) =>
+    console.warn('Redis Client Error:', err.message),
+  );
+
+  redisClient
+    .connect()
+    .then(() => console.log('Redis connected successfully'))
+    .catch(() =>
+      console.warn('Redis connection failed. Using MemoryStore instead.'),
+    );
+
+  store = new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  });
+}
+
+//  Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Якщо store існує (Redis підключився) — юзається його | інакше — undefined (вбудована пам'ять)
+  store: store || undefined,
 });
+
+// ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
+app.set('trust proxy', 1); // trust first proxy
+
 app.use('/api', limiter);
 
 // ua: базовий захист заголовків та налаштування CSP
