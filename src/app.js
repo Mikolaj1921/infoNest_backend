@@ -21,8 +21,8 @@ let redisClient = null;
 let store = null;
 
 // Connect to Redis
-// ua: якщо треба потестити локально (додавти REDIS_URL в .env)
-if (config.NODE_ENV === 'production' || process.env.REDIS_URL) {
+// ua: Redis активується якщо в .env явно прописано USE_REDIS=true
+if (process.env.USE_REDIS === 'true' && config.REDIS_URL) {
   redisClient = createClient({
     url: config.REDIS_URL,
   });
@@ -34,9 +34,7 @@ if (config.NODE_ENV === 'production' || process.env.REDIS_URL) {
   redisClient
     .connect()
     .then(() => console.log('Redis connected successfully'))
-    .catch(() =>
-      console.warn('Redis connection failed. Using MemoryStore instead.'),
-    );
+    .catch((err) => console.warn('Redis connection failed:', err.message));
 
   store = new RedisStore({
     sendCommand: (...args) => redisClient.sendCommand(args),

@@ -18,7 +18,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
   COOKIE_SECRET: z.string().min(16).default('temporary_secret_for_dev_only'),
 
-  REDIS_URL: z.string().url().optional(),
+  //REDIS_URL: z.string().url().optional(),
 });
 
 // validate process.env
