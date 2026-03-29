@@ -14,6 +14,8 @@ const config = require('./config/index'); // load our validated config
 
 const healthRoutes = require('./routes/health.routes');
 
+const errorMiddleware = require('./middlewares/error.middleware');
+
 const app = express();
 
 // Redis settings
@@ -74,33 +76,7 @@ app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 app.use('/api/health', healthRoutes);
 
 // error handling middleware
-// ua: глобальний обробник помилок для уніфікації відповідей API
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  // ua: встановлюємо статус-код та статус (fail/error)
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  // ua: логування повної помилки для розробки
-  console.error(`[ERROR] ${req.method} ${req.url} - ${err.stack}`);
-
-  // ua: відповідь для режиму розробки
-  if (config.NODE_ENV === 'development') {
-    return res.status(err.statusCode).json({
-      success: false,
-      status: err.status,
-      message: err.message,
-      stack: err.stack,
-      error: err,
-    });
-  }
-
-  // ua: відповідь для продакшну
-  // Якщо помилка операційна - текст еррору, інакше - загальний текст
-  res.status(err.statusCode).json({
-    success: false,
-    message: err.isOperational ? err.message : 'Something went wrong.',
-  });
-});
+// ua: глобальний обробник помилок
+app.use(errorMiddleware);
 
 module.exports = app;
