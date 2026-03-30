@@ -13,6 +13,7 @@ const { createClient } = require('redis'); // Імпорт клієнт Redis
 const config = require('./config/index'); // load our validated config
 
 const healthRoutes = require('./routes/health.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -74,6 +75,7 @@ app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 
 // Routes
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // error handling middleware
 // ua: глобальний обробник помилок

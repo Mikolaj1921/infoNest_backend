@@ -1,5 +1,7 @@
 //require('dotenv').config();
 
+// ua: клієнт для роботи з базою даних PostgreSQL через prisma orm
+
 // must have - pg and @prisma/adapter-pg in prisma 7+
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');

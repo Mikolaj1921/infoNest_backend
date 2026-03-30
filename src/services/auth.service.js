@@ -1,11 +1,10 @@
 // ua: тут знаходиться логіка авторизації та аутентифікації користувачів.
 
 const bcrypt = require('bcryptjs'); // ua: Бібліотека для хешування паролів
-const { PrismaClient } = require('@prisma/client'); // ua: PrismaClient для взаємодії з db
 const AppError = require('../utils/appError'); // ua: Клас для обробки помилок у додатку
 const tokenUtils = require('../utils/token.utils'); // ua: Утиліти для генерації та верифікації токенів
 
-const prisma = new PrismaClient();
+const prisma = require('../config/db'); // ua: імпорт підготовленого клієнта Prisma для роботи з бд
 
 class AuthService {
   // ua: Логіка реєстрації - user
