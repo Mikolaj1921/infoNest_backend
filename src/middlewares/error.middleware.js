@@ -13,11 +13,15 @@ module.exports = (err, req, res, next) => {
     return res.status(400).json({
       success: false,
       message: 'Validation Error',
-
-      errors: err.errors.map((e) => ({
-        field: e.path[1] || e.path[0],
-        message: e.message,
-      })),
+      // ua: апдейт - дістається назва поля, якщо path[1] нема, береться path[0] або request
+      errors: (err.errors || []).map((e) => {
+        const fieldName =
+          e.path && e.path.length > 1 ? e.path[1] : e.path[0] || 'request';
+        return {
+          field: fieldName,
+          message: e.message,
+        };
+      }),
     });
   }
 
