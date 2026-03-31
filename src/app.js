@@ -7,42 +7,17 @@ const cors = require('cors'); // use CORS for cross-origin requests
 const helmet = require('helmet'); // use Helmet for security headers
 const cookieParser = require('cookie-parser'); // parse cookie headers
 const rateLimit = require('express-rate-limit'); // limit repeated requests
-const { RedisStore } = require('rate-limit-redis'); // імпорт стор
-const { createClient } = require('redis'); // Імпорт клієнт Redis
+const { redisStore } = require('./config/redis');
 // ua: імпорт конфігурації - по валідованим змінним енв
 const config = require('./config/index'); // load our validated config
 
+// ua: імпорт роутів та глобального обробника помилок
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
-
 const errorMiddleware = require('./middlewares/error.middleware');
 
+// create Express app
 const app = express();
-
-// Redis settings
-let redisClient = null;
-let store = null;
-
-// Connect to Redis
-// ua: Redis активується якщо в .env явно прописано USE_REDIS=true
-if (process.env.USE_REDIS === 'true' && config.REDIS_URL) {
-  redisClient = createClient({
-    url: config.REDIS_URL,
-  });
-
-  redisClient.on('error', (err) =>
-    console.warn('Redis Client Error:', err.message),
-  );
-
-  redisClient
-    .connect()
-    .then(() => console.log('Redis connected successfully'))
-    .catch((err) => console.warn('Redis connection failed:', err.message));
-
-  store = new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args),
-  });
-}
 
 //  Limiter
 const limiter = rateLimit({
@@ -52,12 +27,13 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Якщо store існує (Redis підключився) — юзається його | інакше — undefined (вбудована пам'ять)
-  store: store || undefined,
+  store: redisStore || undefined,
 });
 
 // ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
 app.set('trust proxy', 1); // trust first proxy
 
+// ua: застосування лімітеру до всіх routes
 app.use('/api', limiter);
 
 // ua: базовий захист заголовків та налаштування CSP
