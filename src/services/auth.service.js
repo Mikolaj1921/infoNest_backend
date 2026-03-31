@@ -45,6 +45,29 @@ class AuthService {
 
     return { user };
   }
+
+  // ua: Оновлення рефреш токена в базі
+  async updateRefreshToken(userId, refreshToken) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken },
+    });
+  }
+
+  // ua: пошук користувача за рефреш токеном
+  async findUserByRefreshToken(token) {
+    return await prisma.user.findFirst({
+      where: { refreshToken: token },
+    });
+  }
+
+  // ua: видалення рефреш токена (Logout)
+  async removeRefreshToken(userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+  }
 }
 
 module.exports = new AuthService();
