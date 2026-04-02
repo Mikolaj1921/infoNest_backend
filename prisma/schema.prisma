@@ -51,7 +51,7 @@ model UserWorkspace {
   createdAt   DateTime    @default(now())
 
   user        User        @relation(fields: [userId], references: [id])
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
 }
@@ -60,10 +60,11 @@ model Category {
   id          String      @id @default(cuid())
   name        String
   workspaceId String
+  
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   documents   Document[]
 }
 
