@@ -8,15 +8,22 @@ const asyncHandler = require('../utils/asyncHandler');
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // oтримання токена з кук (або з заголовка Authorization для тестів)
-  if (req.cookies && req.cookies.accessToken) {
-    token = req.cookies.accessToken;
+  // oтримання токена з підписаних кук, звичайних кук або заголовка Authorization
+  if (req.signedCookies && req.signedCookies.accessToken) {
+    token = req.signedCookies.accessToken; // Для реальних браузерів (підписані)
+  } else if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken; // Для тестів або непідписаних кук
   } else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
+
+  //console.log('DEBUG PROTECT');
+  //console.log('auth header:', req.headers.authorization);
+  //console.log('cookies:', req.cookies);
+  //console.log('extracted token:', token);
 
   if (!token) {
     return next(new AppError('Unauthorized. Please log in to continue.', 401));

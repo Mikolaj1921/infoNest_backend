@@ -21,9 +21,10 @@ const errorMiddleware = require('./middlewares/error.middleware');
 // create Express app
 const app = express();
 
-// ua: Морган для логування HTTP-запитів (вимкнено в тестах)
+// ua: Морган для логування HTTP-запитів (вимкнено в тестах) та лімітер
 if (config.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
+  app.use('/api', limiter);
 }
 
 //  Limiter
