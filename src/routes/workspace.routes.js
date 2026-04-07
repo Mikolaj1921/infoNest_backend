@@ -46,7 +46,7 @@ router
   .post(validate(addMemberSchema), memberController.addMember);
 
 router
-  .route('/:id/members/:memberId')
+  .route('/:id/members/:userId') // fixed named param (memberId to userId)
   .patch(validate(updateMemberRoleSchema), memberController.updateMemberRole) // ua: Оновлення ролі учасника
   .delete(memberController.removeMember); // ua: Видалення учасника з воркспейсу
 

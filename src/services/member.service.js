@@ -12,12 +12,12 @@ class MemberService {
     }
 
     // ua: перевірка, чи користувач вже є учасником робочого простору
-
-    const existingMembership = await prisma.workspaceMember.findUnique({
+    // fixed param (WorkspaceMember to UserWorkspace) & (workspaceId_userId: to userId_workspaceId) - corrected with prisma schema
+    const existingMembership = await prisma.userWorkspace.findUnique({
       where: {
-        workspaceId_userId: {
-          workspaceId,
+        userId_workspaceId: {
           userId: userToAdd.id,
+          workspaceId,
         },
       },
     });
@@ -26,7 +26,7 @@ class MemberService {
       throw new AppError('User is already a member of this workspace', 400);
     }
 
-    //  запис у таблиці зв'язку між юзером та робочим простором з ролею
+    // ua: запис у таблиці зв'язку між юзером та робочим простором з ролею
     return await prisma.userWorkspace.create({
       data: {
         userId: userToAdd.id,
@@ -42,7 +42,7 @@ class MemberService {
   }
 
   // update role
-  // ua: Зміна ролі існуючого учасника
+  // ua: зміна ролі існуючого учасника
   async updateMemberRole(workspaceId, userId, newRole) {
     // Не дозволяємо змінювати роль самому собі (щоб Owner не понизив себе випадково)
     // Цю логіку можна посилити в контролері
