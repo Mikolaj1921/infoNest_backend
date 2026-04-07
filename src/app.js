@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser'); // parse cookie headers
 const rateLimit = require('express-rate-limit'); // limit repeated requests
 const { redisStore } = require('./config/redis');
 // ua: імпорт конфігурації - по валідованим змінним енв
+const morgan = require('morgan'); // ua: перенесено сюди для цілісності
 const config = require('./config/index'); // load our validated config
 
 // ua: імпорт роутів та глобального обробника помилок
@@ -19,6 +20,11 @@ const errorMiddleware = require('./middlewares/error.middleware');
 
 // create Express app
 const app = express();
+
+// ua: Морган для логування HTTP-запитів (вимкнено в тестах)
+if (config.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
 //  Limiter
 const limiter = rateLimit({
