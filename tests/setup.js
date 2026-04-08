@@ -7,9 +7,12 @@ const prisma = require('../src/config/db');
 beforeEach(async () => {
 
     // ua: порядок важливий через FK
-    await prisma.membership.deleteMany();
-    await prisma.workspace.deleteMany();
-    await prisma.user.deleteMany();
+    // ua: видаляємо дані у порядку від дочірніх до батьківських таблиць
+    await prisma.userWorkspace.deleteMany(); // зв'язки між користувачами та робочими просторами
+    await prisma.category.deleteMany(); // категорії завдань
+    await prisma.workspace.deleteMany(); // робочі простори
+    await prisma.user.deleteMany(); // користувачі
+
 
 });
 
