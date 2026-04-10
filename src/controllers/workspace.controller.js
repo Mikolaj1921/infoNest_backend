@@ -49,8 +49,6 @@ exports.updateWorkspace = asyncHandler(async (req, res) => {
 exports.deleteWorkspace = asyncHandler(async (req, res) => {
   await workspaceService.deleteWorkspace(req.params.id, req.user.id);
 
-  res.status(204).json({
-    success: true,
-    data: null,
-  });
+  // ua: 204 не передбачає тіла відповіді, тільки статус
+  res.status(204).send();
 });
