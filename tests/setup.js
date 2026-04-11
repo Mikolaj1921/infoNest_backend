@@ -8,10 +8,13 @@ beforeEach(async () => {
 
     // ua: порядок важливий через FK
     // ua: видаляємо дані у порядку від дочірніх до батьківських таблиць
-    await prisma.userWorkspace.deleteMany(); // зв'язки між користувачами та робочими просторами
-    await prisma.category.deleteMany(); // категорії завдань
-    await prisma.workspace.deleteMany(); // робочі простори
-    await prisma.user.deleteMany(); // користувачі
+    await prisma.revision.deleteMany();
+    await prisma.file.deleteMany();
+    await prisma.document.deleteMany();
+    await prisma.category.deleteMany();
+    await prisma.userWorkspace.deleteMany();
+    await prisma.workspace.deleteMany();
+    await prisma.user.deleteMany();
 
 
 });

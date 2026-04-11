@@ -13,6 +13,7 @@ yarn-error.log*
 debug.log
 debug-*.log
 *debug.log
+test-results.txt
 
 # Dependency directories
 node_modules/

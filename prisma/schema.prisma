@@ -78,7 +78,7 @@ model Document {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  category    Category    @relation(fields: [categoryId], references: [id])
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   owner       User        @relation(fields: [ownerId], references: [id])
   files       File[]
   revisions   Revision[]

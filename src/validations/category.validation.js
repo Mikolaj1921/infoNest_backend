@@ -28,4 +28,4 @@ const updateCategorySchema = z.object({
   }),
 });
 
-exports = { createCategorySchema, updateCategorySchema };
+module.exports = { createCategorySchema, updateCategorySchema };
