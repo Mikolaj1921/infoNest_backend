@@ -14,8 +14,13 @@ const config = require('./config/index'); // load our validated config
 
 // ua: імпорт роутів та глобального обробника помилок
 const healthRoutes = require('./routes/health.routes');
+// auth
 const authRoutes = require('./routes/auth.routes');
+// workspaces
 const workspaceRoutes = require('./routes/workspace.routes');
+const categoryRouter = require('./routes/category.routes');
+const documentRouter = require('./routes/document.routes');
+// error handling middleware
 const errorMiddleware = require('./middlewares/error.middleware');
 
 // create Express app
@@ -61,6 +66,8 @@ app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/categories', categoryRouter);
+app.use('/api/documents', documentRouter);
 
 // error handling middleware
 // ua: глобальний обробник помилок
