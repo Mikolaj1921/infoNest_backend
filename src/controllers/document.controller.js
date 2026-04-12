@@ -39,11 +39,32 @@ exports.getDocumentById = asyncHandler(async (req, res) => {
 exports.updateDocument = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const updatedDocument = await documentService.updateDocument(id, req.body);
+  // ua: оновлення документа
+  const updatedDocument = await documentService.updateDocument(
+    id,
+    req.user.id,
+    req.body,
+  );
 
+  // ua: відповідь клієнту з оновленим документом
   res.status(200).json({
     success: true,
     data: { document: updatedDocument },
+  });
+});
+
+// ua: Отримання історії документа (ревізій)
+exports.getDocumentRevisions = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // ua: отримання ревізій документа
+  const revisions = await documentService.getDocumentRevisions(id);
+
+  // ua: відповідь клієнту з кількістю ревізій та їх даними
+  res.status(200).json({
+    success: true,
+    results: revisions.length,
+    data: { revisions },
   });
 });
 
