@@ -92,6 +92,37 @@ class DocumentService {
     });
   }
 
+  // ua: Отримання історії змін документа (ревізій)
+  async getDocumentRevisions(documentId) {
+    // ua: перевірка, чи існує документ
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new AppError('Document not found', 404);
+    }
+
+    // ua: отримання ревізій документа з підтягуванням даних про редактора та сортуванням за датою
+    const revisions = await prisma.revision.findMany({
+      where: { documentId },
+      include: {
+        editor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      // ua: сортування ревізій за датою створення (найновіші перші)
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return revisions;
+  }
+
   // ua: Видалення документа
   async deleteDocument(id) {
     // ua: перевірка, чи існує документ
