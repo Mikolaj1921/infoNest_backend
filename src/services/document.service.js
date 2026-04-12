@@ -62,24 +62,34 @@ class DocumentService {
     return document;
   }
 
-  // ua: Оновлення документа
-  async updateDocument(id, data) {
+  // ua: Оновлення документа враз з збереженням ревізії(історії змін)
+  async updateDocument(id, userId, data) {
     // ua: перевірка, чи існує документ
-    const document = await prisma.document.findUnique({
+    const oldDocument = await prisma.document.findUnique({
       where: { id },
     });
 
-    if (!document) {
+    if (!oldDocument) {
       throw new AppError('Document not found', 404);
     }
 
-    // ua: оновлення документа
-    const updatedDocument = await prisma.document.update({
-      where: { id },
-      data: data,
-    });
+    // ua: використання транзакції для створення ревізії та оновлення документа
+    return await prisma.$transaction(async (prisma) => {
+      // ua: створення запису в історії (збееження контенту який був до оновлення)
+      await prisma.revision.create({
+        data: {
+          documentId: id,
+          content: oldDocument.content,
+          editorId: userId,
+        },
+      });
 
-    return updatedDocument;
+      // ua: оновлення документа новими даними
+      return await prisma.document.update({
+        where: { id },
+        data: data,
+      });
+    });
   }
 
   // ua: Видалення документа
