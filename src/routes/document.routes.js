@@ -5,7 +5,10 @@ const documentController = require('../controllers/document.controller');
 const { protect } = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
 // validations
-const { createDocumentSchema } = require('../validations/document.validation');
+const {
+  createDocumentSchema,
+  updateDocumentSchema,
+} = require('../validations/document.validation');
 
 const router = express.Router();
 
@@ -18,11 +21,14 @@ router.post(
   documentController.createDocument,
 );
 
+// ua: ревізія(історія) документа - отримання всіх ревізій для документа
+router.get('/:id/revisions', documentController.getDocumentRevisions);
+
 // ua: отримання документа за id, оновлення та видалення
 router
   .route('/:id')
-  .get(documentController.getDocumentById)
-  .patch(documentController.updateDocument)
-  .delete(documentController.deleteDocument);
+  .get(documentController.getDocumentById) // ua: отримання документа за id
+  .patch(validate(updateDocumentSchema), documentController.updateDocument) // ua: оновлення документа з валідацією даних
+  .delete(documentController.deleteDocument); // ua: видалення документа
 
 module.exports = router;

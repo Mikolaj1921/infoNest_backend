@@ -19,4 +19,21 @@ const createDocumentSchema = z.object({
   }),
 });
 
-module.exports = { createDocumentSchema };
+// ua: Схема для оновлення документа
+
+const updateDocumentSchema = z.object({
+  body: z.object({
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Document title must be at least 1 character long.')
+      .max(100, 'Document title is too long')
+      .optional(), // ua: робить поле не обов., щоб можна було оновити лише контент або лише заголовок
+    content: z.string().optional(),
+  }),
+  params: z.object({
+    id: z.string().cuid('Invalid document ID'), // ua: валідація ід документа в урл
+  }),
+});
+
+module.exports = { createDocumentSchema, updateDocumentSchema };
