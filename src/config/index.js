@@ -19,6 +19,12 @@ const envSchema = z.object({
   COOKIE_SECRET: z.string().min(16).default('temporary_secret_for_dev_only'),
 
   //REDIS_URL: z.string().url().optional(),
+
+  // cloudflare r2 config
+  R2_ACCESS_KEY_ID: z.string().min(1, 'R2 Access Key is required'),
+  R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2 Secret Access Key is required'),
+  R2_ENDPOINT: z.string().url('Invalid R2 Endpoint URL'),
+  R2_BUCKET_NAME: z.string().min(1, 'R2 Bucket Name is required'),
 });
 
 // validate process.env
