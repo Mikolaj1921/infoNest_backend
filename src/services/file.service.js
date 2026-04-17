@@ -10,6 +10,15 @@ const AppError = require('../utils/appError');
 class FileService {
   // ua: Завантаження файлу в хмару та запис метаданих у БД
   async uploadFile(file, documentId, userId) {
+    // ua: перевірка, чи існує документ, до якого кріпиться файл
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new AppError('Document not found', 404);
+    }
+
     // ua: генерування унік імені файлу
     const fileKey = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
 
