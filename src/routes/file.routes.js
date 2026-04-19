@@ -21,9 +21,9 @@ router.use(protect);
 // ua: використ upload.single('file'), де file - назва поля у form-data
 router.post(
   '/document/:id',
-  restrictTo('Owner', 'Admin', 'Editor'),
-  validate(uploadFileSchema),
   upload.single('file'),
+  validate(uploadFileSchema),
+  restrictTo('Owner', 'Admin', 'Editor'),
   fileController.uploadFile,
 );
 

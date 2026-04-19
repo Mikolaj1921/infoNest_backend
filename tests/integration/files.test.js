@@ -40,8 +40,8 @@ describe('File Storage Integration Tests (Cloudflare R2)', () => {
             const res = await request(app)
                 .post(`/api/files/document/${document.id}`)
                 .set('Authorization', `Bearer ${token}`)
-                // ua: юзається .attach для симуляції завантаження файлу
-                .attach('file', Buffer.from('fake-pdf-content'), 'test.pdf');
+                .field('workspaceId', workspace.id)
+                .attach('file', Buffer.from('fake-content'), 'test.pdf');
 
             expect(res.statusCode).toBe(201);
             expect(res.body.success).toBe(true);
