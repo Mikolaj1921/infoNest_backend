@@ -58,8 +58,8 @@ describe('File Storage Integration Tests (Cloudflare R2)', () => {
         });
 
 
-        // ua: поки викл бо ще не реалізовано ролі та права доступу
-        /*
+
+
         // ua: Security Test (Viewer отримує 403) - перевірка ролей та прав доступу
         test('should return 403 if Viewer tries to upload a file', async () => {
             const viewerAuth = await getAuthToken('viewer@test.com');
@@ -80,7 +80,7 @@ describe('File Storage Integration Tests (Cloudflare R2)', () => {
 
             expect(res.statusCode).toBe(403);
         });
-        */
+
     });
 
     describe('DELETE /api/files/:id', () => {

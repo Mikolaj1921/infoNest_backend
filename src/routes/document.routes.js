@@ -3,6 +3,7 @@ const express = require('express');
 const documentController = require('../controllers/document.controller');
 // middlewares
 const { protect } = require('../middlewares/auth.middleware');
+const { restrictTo } = require('../middlewares/role.middleware');
 const validate = require('../middlewares/validate.middleware');
 // validations
 const {
@@ -17,6 +18,7 @@ router.use(protect); // ua: всі маршрути документів зах�
 // ua: створення документа
 router.post(
   '/',
+  restrictTo('Owner', 'Admin', 'Editor'), // ua: тільки власник, адмін та редактор можуть створювати документи
   validate(createDocumentSchema),
   documentController.createDocument,
 );
@@ -28,7 +30,14 @@ router.get('/:id/revisions', documentController.getDocumentRevisions);
 router
   .route('/:id')
   .get(documentController.getDocumentById) // ua: отримання документа за id
-  .patch(validate(updateDocumentSchema), documentController.updateDocument) // ua: оновлення документа з валідацією даних
-  .delete(documentController.deleteDocument); // ua: видалення документа
+  .patch(
+    restrictTo('Owner', 'Admin', 'Editor'), // ua: захист оновлення
+    validate(updateDocumentSchema),
+    documentController.updateDocument,
+  )
+  .delete(
+    restrictTo('Owner', 'Admin'), // ua: тільки високі ролі можуть видаляти
+    documentController.deleteDocument,
+  );
 
 module.exports = router;

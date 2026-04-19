@@ -3,7 +3,7 @@ const express = require('express');
 const fileController = require('../controllers/file.controller');
 // middlewares
 const { protect } = require('../middlewares/auth.middleware');
-//const { restrictTo } = require('../middlewares/role.middleware');
+const { restrictTo } = require('../middlewares/role.middleware');
 const upload = require('../middlewares/upload.middleware');
 const validate = require('../middlewares/validate.middleware');
 // validations
@@ -21,7 +21,7 @@ router.use(protect);
 // ua: використ upload.single('file'), де file - назва поля у form-data
 router.post(
   '/document/:id',
-  //restrictTo('Owner', 'Admin', 'Editor'),
+  restrictTo('Owner', 'Admin', 'Editor'),
   validate(uploadFileSchema),
   upload.single('file'),
   fileController.uploadFile,
@@ -30,7 +30,7 @@ router.post(
 // ua: видалення файлу
 router.delete(
   '/:id',
-  //restrictTo('Owner', 'Admin'),
+  restrictTo('Owner', 'Admin'),
   validate(deleteFileSchema),
   fileController.deleteFile,
 );
