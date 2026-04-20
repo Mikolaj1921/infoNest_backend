@@ -7,6 +7,7 @@ const prisma = require('../src/config/db');
 // ua: Очищення таблиць перед кожним тестом
 beforeEach(async () => {
     // ua: видалення найглибших залежностей
+    await prisma.activity.deleteMany();
     await prisma.revision.deleteMany();
     await prisma.file.deleteMany();
 

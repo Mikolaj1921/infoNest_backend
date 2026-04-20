@@ -25,6 +25,7 @@ model User {
   documents  Document[]
   revisions  Revision[]
   files      File[]
+  activities Activity[]  // ua: зв'язок з активністю
 
   ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
 }
@@ -41,6 +42,7 @@ model Workspace {
   owner       User        @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   users       UserWorkspace[]
   categories  Category[]
+  activities  Activity[]  // ua: зв'язок з активністю
 }
 
 model UserWorkspace {
@@ -106,6 +108,20 @@ model Revision {
 
   document    Document    @relation(fields: [documentId], references: [id])
   editor      User        @relation(fields: [editorId], references: [id])
+}
+
+// ua: Модель для логування активності у системі
+model Activity {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  action      String   // ua: тип дії (напр. CREATE_DOCUMENT, UPLOAD_FILE)
+  entityId    String?  // ua: ID об'єкта (документа, файлу тощо)
+  entityName  String?  // ua: назва об'єкта для швидкого відображення в стрічці
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ENUMS
