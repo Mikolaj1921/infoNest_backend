@@ -2,21 +2,20 @@
 
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
+const activityService = require('./activity.service'); // ua: імпортуємо сервіс активності
 
 class DocumentService {
   // ua: Створення документа
   async createDocument(userId, categoryId, data) {
-    // ua: перевірка, чи існує категорія
+    // ua: перевірка, чи існує категорія (тепер підтягуємо workspaceId для логу активності)
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
-      //include: { workspace: true }, // ua: щоб перевірити, чи належить категорія юзеру
+      select: { id: true, workspaceId: true },
     });
 
     if (!category) {
       throw new AppError('Category not found', 404);
     }
-
-    // ua: створення документа
 
     const newDocument = await prisma.document.create({
       data: {
@@ -27,31 +26,28 @@ class DocumentService {
       },
     });
 
+    // ua: запис активності
+    activityService.logActivity(
+      category.workspaceId,
+      userId,
+      'CREATE_DOCUMENT',
+      newDocument.id,
+      newDocument.title,
+    );
+
     return newDocument;
   }
 
   // ua: Отримання документа за id
   async getDocumentById(id) {
-    // ua: отримання документа з підтягуванням даних про власника та категорію
-    //  (щоб не робити додаткові запити при відображенні документа)
     const document = await prisma.document.findUnique({
       where: { id },
       include: {
-        // ua: підтягування даних про (owner)
         owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
-        // ua: підтягування даних про категорію
         category: {
-          select: {
-            id: true,
-            name: true,
-            workspaceId: true,
-          },
+          select: { id: true, name: true, workspaceId: true },
         },
       },
     });
@@ -62,21 +58,20 @@ class DocumentService {
     return document;
   }
 
-  // ua: Оновлення документа враз з збереженням ревізії(історії змін)
+  // ua: Оновлення документа
   async updateDocument(id, userId, data) {
-    // ua: перевірка, чи існує документ
+    // ua: перевірка існування (підтягуємо категорію для логу)
     const oldDocument = await prisma.document.findUnique({
       where: { id },
+      include: { category: { select: { workspaceId: true } } },
     });
 
     if (!oldDocument) {
       throw new AppError('Document not found', 404);
     }
 
-    // ua: використання транзакції для створення ревізії та оновлення документа
-    return await prisma.$transaction(async (prisma) => {
-      // ua: створення запису в історії (збееження контенту який був до оновлення)
-      await prisma.revision.create({
+    const updatedDocument = await prisma.$transaction(async (tx) => {
+      await tx.revision.create({
         data: {
           documentId: id,
           content: oldDocument.content,
@@ -84,17 +79,26 @@ class DocumentService {
         },
       });
 
-      // ua: оновлення документа новими даними
-      return await prisma.document.update({
+      return await tx.document.update({
         where: { id },
         data: data,
       });
     });
+
+    // ua: запис активності
+    activityService.logActivity(
+      oldDocument.category.workspaceId,
+      userId,
+      'UPDATE_DOCUMENT',
+      updatedDocument.id,
+      updatedDocument.title,
+    );
+
+    return updatedDocument;
   }
 
   // ua: Отримання історії змін документа (ревізій)
   async getDocumentRevisions(documentId) {
-    // ua: перевірка, чи існує документ
     const document = await prisma.document.findUnique({
       where: { id: documentId },
     });
@@ -103,41 +107,39 @@ class DocumentService {
       throw new AppError('Document not found', 404);
     }
 
-    // ua: отримання ревізій документа з підтягуванням даних про редактора та сортуванням за датою
-    const revisions = await prisma.revision.findMany({
+    return await prisma.revision.findMany({
       where: { documentId },
       include: {
-        editor: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        editor: { select: { id: true, name: true } },
       },
-      // ua: сортування ревізій за датою створення (найновіші перші)
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return revisions;
   }
 
   // ua: Видалення документа
   async deleteDocument(id) {
-    // ua: перевірка, чи існує документ
+    // ua: перевірка (підтягуємо категорію для логу)
     const document = await prisma.document.findUnique({
       where: { id },
+      include: { category: { select: { workspaceId: true } } },
     });
 
     if (!document) {
       throw new AppError('Document not found', 404);
     }
 
-    // ua: видалення документа
     await prisma.document.delete({
       where: { id },
     });
+
+    // ua: запис активності
+    activityService.logActivity(
+      document.category.workspaceId,
+      document.ownerId,
+      'DELETE_DOCUMENT',
+      document.id,
+      document.title,
+    );
 
     return document;
   }
