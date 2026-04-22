@@ -2,6 +2,7 @@ const express = require('express');
 // controllers
 const workspaceController = require('../controllers/workspace.controller');
 const memberController = require('../controllers/member.controller');
+const activityController = require('../controllers/activity.controller'); // ua: контролер для стрічки активності
 // middlewares
 const validate = require('../middlewares/validate.middleware');
 const { protect } = require('../middlewares/auth.middleware'); // ua: Middleware для захисту маршрутів
@@ -15,6 +16,9 @@ const {
   addMemberSchema,
   updateMemberRoleSchema,
 } = require('../validations/member.validation'); // ua: Схеми валідації для додавання учасника та оновлення ролі учасника
+const {
+  getWorkspaceActivitySchema,
+} = require('../validations/activity.validation'); // ua: Схема валідації для отримання активності
 
 const router = express.Router();
 
@@ -27,6 +31,14 @@ router
   .route('/')
   .post(validate(createWorkspaceSchema), workspaceController.createWorkspace) // ua: Створення workspace
   .get(workspaceController.getAllWorkspaces); // ua: Отримання списку - workspaces
+
+// ua: Отримання стрічки активності конкретного воркспейсу
+router.get(
+  '/:id/activity',
+  restrictTo('Owner', 'Admin', 'Editor', 'Viewer'), // ua: бачити активність можуть усі учасники
+  validate(getWorkspaceActivitySchema),
+  activityController.getWorkspaceActivity,
+);
 
 // ua: /:id - для отримання, оновлення та видалення конкретного воркспейсу
 router
