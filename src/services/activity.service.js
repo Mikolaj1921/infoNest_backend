@@ -5,13 +5,13 @@ const prisma = require('../config/db');
 class ActivityService {
   // ua: створення запису про подію
 
-  async logActivity({
-    userId,
+  async logActivity(
     workspaceId,
+    userId,
     action,
     entityId = null,
     entityName = null,
-  }) {
+  ) {
     try {
       return await prisma.activity.create({
         data: {
