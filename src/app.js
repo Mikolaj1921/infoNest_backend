@@ -21,6 +21,8 @@ const workspaceRoutes = require('./routes/workspace.routes');
 const categoryRouter = require('./routes/category.routes');
 const documentRouter = require('./routes/document.routes');
 const fileRouter = require('./routes/file.routes');
+// search
+const searchRoutes = require('./routes/search.routes');
 // error handling middleware
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -70,6 +72,7 @@ app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/categories', categoryRouter);
 app.use('/api/documents', documentRouter);
 app.use('/api/files', fileRouter);
+app.use('/api/search', searchRoutes);
 
 // error handling middleware
 // ua: глобальний обробник помилок
