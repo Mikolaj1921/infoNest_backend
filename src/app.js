@@ -29,12 +29,6 @@ const errorMiddleware = require('./middlewares/error.middleware');
 // create Express app
 const app = express();
 
-// ua: Морган для логування HTTP-запитів (вимкнено в тестах) та лімітер
-if (config.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
-  app.use('/api', limiter);
-}
-
 //  Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -45,6 +39,12 @@ const limiter = rateLimit({
   // Якщо store існує (Redis підключився) — юзається його | інакше — undefined (вбудована пам'ять)
   store: redisStore || undefined,
 });
+
+// ua: Морган для логування HTTP-запитів (вимкнено в тестах) та лімітер
+if (config.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+  app.use('/api', limiter);
+}
 
 // ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
 app.set('trust proxy', 1); // trust first proxy
