@@ -4,6 +4,9 @@
 const authService = require('../services/auth.service');
 const asyncHandler = require('../utils/asyncHandler');
 
+// email utils - welcome email
+const Email = require('../utils/email');
+
 const tokenUtils = require('../utils/token.utils');
 const AppError = require('../utils/appError');
 const config = require('../config/index');
@@ -17,6 +20,13 @@ exports.register = asyncHandler(async (req, res) => {
 
   // ua: запис рефреш-токена у базу даних
   await authService.updateRefreshToken(result.user.id, tokens.refreshToken);
+
+  // ua: відправка вітального листа
+  try {
+    await new Email(result.user).sendWelcome();
+  } catch (err) {
+    console.error('Email sending failed during registration:', err);
+  }
 
   res.status(201).json({
     success: true,
