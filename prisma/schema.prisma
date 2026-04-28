@@ -26,6 +26,7 @@ model User {
   revisions  Revision[]
   files      File[]
   activities Activity[]  // ua: зв'язок з активністю
+  notifications Notification[]  // reletion with notifications
 
   ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
 }
@@ -122,6 +123,19 @@ model Activity {
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ua: Модель для внутрішніх сповіщень користувача
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String   // ua: кому призначене сповіщення
+  title       String   // ua: заголовок (напр. "Нове запрошення")
+  message     String   // ua: текст повідомлення
+  type        String   // ua: тип (напр. "INVITE", "ROLE_CHANGE", "SYSTEM")
+  isRead      Boolean  @default(false) // ua: чи прочитав користувач
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ENUMS

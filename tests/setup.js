@@ -21,6 +21,11 @@ beforeEach(async () => {
     // ua: видаленя воркспейсів (вони посилаються на юзер як на овнера)
     await prisma.workspace.deleteMany();
 
+
+    // ua: видалення повідомлень 
+    await prisma.notification.deleteMany();
+
+
     // ua: видалення користувачів (вони посилаються на воркспейс як на овнера)
     await prisma.user.deleteMany();
 });
