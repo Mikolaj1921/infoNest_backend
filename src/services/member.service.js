@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
+const notificationService = require('./notification.service');
 
 class MemberService {
   // Add user to workspace
@@ -26,8 +27,14 @@ class MemberService {
       throw new AppError('User is already a member of this workspace', 400);
     }
 
+    // ua: отримуємо назву воркспейсу для тексту сповіщення
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+
     // ua: запис у таблиці зв'язку між юзером та робочим простором з ролею
-    return await prisma.userWorkspace.create({
+    const newMembership = await prisma.userWorkspace.create({
       data: {
         userId: userToAdd.id,
         workspaceId,
@@ -39,6 +46,15 @@ class MemberService {
         },
       },
     });
+
+    // ua: створення внутрішнього сповіщення для доданого користувача
+    notificationService.createNotification(userToAdd.id, {
+      title: 'New Workspace Invitation',
+      message: `You have been added to the workspace "${workspace.name}" as ${role}`,
+      type: 'INVITE',
+    });
+
+    return newMembership;
   }
 
   // update role
@@ -47,12 +63,22 @@ class MemberService {
     // Не дозволяємо змінювати роль самому собі (щоб Owner не понизив себе випадково)
     // Цю логіку можна посилити в контролері
 
-    return await prisma.userWorkspace.update({
+    const updatedMembership = await prisma.userWorkspace.update({
       where: {
         userId_workspaceId: { userId, workspaceId },
       },
       data: { role: newRole },
+      include: { workspace: { select: { name: true } } },
     });
+
+    // ua: сповіщення користувача про зміну його ролі
+    notificationService.createNotification(userId, {
+      title: 'Role Updated',
+      message: `Your role in workspace "${updatedMembership.workspace.name}" has been changed to ${newRole}`,
+      type: 'ROLE_CHANGE',
+    });
+
+    return updatedMembership;
   }
 
   // ua: Видалення учасника з воркспейсу
