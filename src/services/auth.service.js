@@ -99,6 +99,45 @@ class AuthService {
       },
     });
   }
+
+  // ua: Видалення акаунта користувача з повним очищенням хмарного сховища
+  async deleteAccount(userId, password) {
+    // ua: пошук користувача разом із його файлами
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { files: true }, // ua: підтягуємо всі файли користувача
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // ua: перевірка - пароль перед видаленням
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      throw new AppError(
+        'Incorrect password. Account deletion cancelled.',
+        401,
+      );
+    }
+
+    // ua: Видаляємо файли з Cloudflare R2
+    const fileService = require('./file.service'); // ua: імпортуємо сервіс файлів локально
+
+    // ua: чек по всіх файлах користувача та видаляємо їх із хмари
+    const deleteFilesPromises = user.files.map((file) =>
+      fileService.deleteFile(file.id).catch((err) => {
+        console.error(`Failed to delete file ${file.id} from R2:`, err.message);
+      }),
+    );
+
+    await Promise.all(deleteFilesPromises);
+
+    // ua: DB CLEANUP: Видаляємо юзера (Prisma Cascade видалить воркспейси, документи, активність і т.д.)
+    return await prisma.user.delete({
+      where: { id: userId },
+    });
+  }
 }
 
 module.exports = new AuthService();

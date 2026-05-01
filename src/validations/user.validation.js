@@ -13,4 +13,13 @@ const updatePasswordSchema = z.object({
   }),
 });
 
-module.exports = { updatePasswordSchema };
+// ua: валідація для видалення акаунта
+const deleteAccountSchema = z.object({
+  body: z.object({
+    password: z
+      .string()
+      .min(1, 'Password is required to confirm account deletion'),
+  }),
+});
+
+module.exports = { updatePasswordSchema, deleteAccountSchema };
