@@ -68,6 +68,37 @@ class AuthService {
       data: { refreshToken: null },
     });
   }
+
+  // ua: Метод для зміни пароля з перевіркою старого та скиданням сесій (Session Reset)
+  async updatePassword(userId, oldPassword, newPassword) {
+    // ua: пошук користувача в базі для отримання поточного хешу пароля
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // ua: чек - чи введений старий пароль відповідає дійсності
+    const isPasswordCorrect = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordCorrect) {
+      throw new AppError('The current password you entered is incorrect', 401);
+    }
+
+    // ua: хеш - новий пароль перед збереженням
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // ua: оновлюється пароль та видаляється refreshToken (Session Reset),
+    // щоб користувач розлогінився на всіх пристроях задля безпеки
+    return await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        refreshToken: null,
+      },
+    });
+  }
 }
 
 module.exports = new AuthService();
