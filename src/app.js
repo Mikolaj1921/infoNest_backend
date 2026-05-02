@@ -25,6 +25,8 @@ const fileRouter = require('./routes/file.routes');
 const searchRoutes = require('./routes/search.routes');
 // notifications
 const notificationRoutes = require('./routes/notification.routes');
+// user
+const userRoutes = require('./routes/user.routes');
 // error handling middleware
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -76,6 +78,7 @@ app.use('/api/documents', documentRouter);
 app.use('/api/files', fileRouter);
 app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 
 // error handling middleware
 // ua: глобальний обробник помилок
