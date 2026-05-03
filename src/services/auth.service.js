@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const AppError = require('../utils/appError');
 const prisma = require('../config/db');
+const activityService = require('./activity.service'); // ua:  сервіс активності
 
 // ua: сервіс для реєстрації та логіну користувачів
 class AuthService {
@@ -91,13 +92,18 @@ class AuthService {
 
     // ua: оновлюється пароль та видаляється refreshToken (Session Reset),
     // щоб користувач розлогінився на всіх пристроях задля безпеки
-    return await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         password: hashedPassword,
         refreshToken: null,
       },
     });
+
+    // ua: логування зміни пароля (workspaceId = null для системних дій профілю)
+    activityService.logActivity(null, userId, 'PASSWORD_CHANGED');
+
+    return updatedUser;
   }
 
   // ua: Видалення акаунта користувача з повним очищенням хмарного сховища
@@ -132,6 +138,9 @@ class AuthService {
     );
 
     await Promise.all(deleteFilesPromises);
+
+    // ua: логування видалення акаунта перед очищенням БД
+    activityService.logActivity(null, userId, 'ACCOUNT_DELETED');
 
     // ua: DB CLEANUP: Видаляємо юзера (Prisma Cascade видалить воркспейси, документи, активність і т.д.)
     return await prisma.user.delete({
