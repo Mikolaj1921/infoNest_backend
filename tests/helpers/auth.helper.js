@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../../src/config/db');
+const bcrypt = require('bcryptjs'); // ua: для хешування пароля юзера
 
 const getAuthToken = async (email = 'test@example.com') => {
     // ua: отримання секретного ключв з процесу (через dotenv-cli)
@@ -13,11 +14,13 @@ const getAuthToken = async (email = 'test@example.com') => {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
+        const hashedPassword = await bcrypt.hash('hashed_password_333', 12);
+
         user = await prisma.user.create({
             data: {
                 email,
                 name: 'Test Tester',
-                password: 'hashed_password_333',
+                password: hashedPassword,
             },
         });
     }
