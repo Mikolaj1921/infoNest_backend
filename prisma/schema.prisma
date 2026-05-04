@@ -44,6 +44,8 @@ model Workspace {
   users       UserWorkspace[]
   categories  Category[]
   activities  Activity[]  // ua: зв'язок з активністю
+
+  @@index([ownerId]) // ua:  для прискорення отримання списку воркспейсів власника
 }
 
 model UserWorkspace {
@@ -57,6 +59,7 @@ model UserWorkspace {
   workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
+  @@index([workspaceId]) // ua: прискорює пошук усіх учасників воркспейсу
 }
 
 model Category {
@@ -69,6 +72,8 @@ model Category {
 
   workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   documents   Document[]
+
+  @@index([workspaceId]) // ua: прискорює отримання категорій конкретного в
 }
 
 model Document {
@@ -85,6 +90,9 @@ model Document {
   owner       User        @relation(fields: [ownerId], references: [id])
   files       File[]
   revisions   Revision[]
+
+  @@index([categoryId]) // ua: критично для отримання списку документів у папці
+  @@index([ownerId])    // ua: прискорює пошук власних документів юзера
 }
 
 model File {
@@ -98,6 +106,8 @@ model File {
 
   document    Document    @relation(fields: [documentId], references: [id])
   owner       User        @relation(fields: [ownerId], references: [id])
+
+  @@index([documentId]) // ua: прискорює отримання списку файлів документа
 }
 
 model Revision {
@@ -109,6 +119,8 @@ model Revision {
 
   document    Document    @relation(fields: [documentId], references: [id])
   editor      User        @relation(fields: [editorId], references: [id])
+
+  @@index([documentId]) // ua: для швидкого отримання історії конкретного документа
 }
 
 // ua: Модель для логування активності у системі
@@ -123,6 +135,9 @@ model Activity {
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId]) // ua: критично для стрічки активності воркспейсу
+  @@index([userId])      // ua: для пошуку активності конкретного юзера
 }
 
 // ua: Модель для внутрішніх сповіщень користувача
@@ -136,6 +151,8 @@ model Notification {
   createdAt   DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // ua: додаємо для миттєвого отримання списку сповіщень юзера
 }
 
 // ENUMS
