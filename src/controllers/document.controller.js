@@ -3,9 +3,23 @@
 const documentService = require('../services/document.service');
 const asyncHandler = require('../utils/asyncHandler');
 
-// ua: Створення нового документа
-
 // rules: params - id, body - categoryId
+
+// ua: Отримання всіх документів (з фільтрами та пагінацією)
+exports.getAllDocuments = asyncHandler(async (req, res) => {
+  // ua:  workspaceId з query або з body
+  const workspaceId = req.query.workspaceId || req.body.workspaceId;
+
+  // ua: Виклик сервіс, передаючи ід воркспейсу та всі параметри запиту (query)
+  const result = await documentService.getAllDocuments(workspaceId, req.query);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+// ua: Створення нового документа
 
 exports.createDocument = asyncHandler(async (req, res) => {
   const userId = req.user.id; // ua: id юзера з протекта (middleware auth)
