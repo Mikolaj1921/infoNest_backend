@@ -3,6 +3,8 @@
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
 
+const { getPagination } = require('../utils/pagination');
+
 class CategoryService {
   // ua: Створення категорії
   async createCategory(workspaceId, name) {
@@ -30,7 +32,9 @@ class CategoryService {
   }
 
   // ua: Отримання всіх категорій для воркспейсу
-  async getWorkspaceCategories(workspaceId) {
+  async getWorkspaceCategories(workspaceId, query) {
+    const { skip, take, page, limit } = getPagination(query);
+
     // ua: перевірка, чи існує воркспейс
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -42,12 +46,30 @@ class CategoryService {
     }
 
     // ua: отримання категорій для воркспейсу + кількість документів у кожній категорії
-    await prisma.category.findMany({
-      where: { workspaceId: workspaceId }, // ua: перевірка, чи існує воркспейс
-      include: {
-        _count: { select: { documents: true } }, // ua: рахується кількість документів у категорії
+    // ua: додано пагінацію та повернення результату разом із мета-даними
+    const [categories, totalCount] = await Promise.all([
+      prisma.category.findMany({
+        where: { workspaceId: workspaceId }, // ua: перевірка, чи існує воркспейс
+        skip,
+        take,
+        include: {
+          _count: { select: { documents: true } }, // ua:  кількість документів у категорії
+        },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.category.count({ where: { workspaceId } }),
+    ]);
+
+    return {
+      // ua: повертаємо категорії та мета-дані для пагінації
+      categories,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
-    });
+    };
   }
 
   // ua: Оновлення категорії

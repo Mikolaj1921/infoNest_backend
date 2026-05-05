@@ -21,12 +21,11 @@ exports.createCategory = asyncHandler(async (req, res) => {
 exports.getWorkspaceCategories = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const categories = await categoryService.getWorkspaceCategories(id);
+  const result = await categoryService.getWorkspaceCategories(id, req.query);
 
   res.status(200).json({
     success: true,
-    results: categories.length,
-    data: { categories },
+    data: result,
   });
 });
 
