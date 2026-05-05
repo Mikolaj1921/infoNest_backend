@@ -22,12 +22,14 @@ exports.createWorkspace = asyncHandler(async (req, res) => {
 
 // ua: Отримання списку воркспейсів поточного юзера
 exports.getAllWorkspaces = asyncHandler(async (req, res) => {
-  const workspaces = await workspaceService.getAllWorkspaces(req.user.id);
+  const result = await workspaceService.getAllWorkspaces(
+    req.user.id,
+    req.query,
+  );
 
   res.status(200).json({
     success: true,
-    results: workspaces.length,
-    data: { workspaces },
+    data: result,
   });
 });
 

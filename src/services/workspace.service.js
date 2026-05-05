@@ -5,6 +5,7 @@
 
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
+const { getPagination } = require('../utils/pagination'); // ua: пагінація
 
 class WorkspaceService {
   // ua: Створення воркспейсу + призначення ownera
@@ -36,17 +37,40 @@ class WorkspaceService {
   }
 
   // ua: get all workspaces for user
-  async getAllWorkspaces(userId) {
-    return await prisma.workspace.findMany({
-      where: {
-        users: {
-          some: { userId },
+  async getAllWorkspaces(userId, query) {
+    const { skip, take, page, limit } = getPagination(query); // ua: параметри пагінації
+
+    // ua: умова для фільтрації воркспейсів, до яких юзер має доступ
+    const where = {
+      users: {
+        some: { userId },
+      },
+    };
+
+    // ua: паралельне отримання даних та загальної кількості
+    const [workspaces, totalCount] = await Promise.all([
+      prisma.workspace.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          _count: { select: { users: true, categories: true } },
         },
+        orderBy: { createdAt: 'desc' }, // ua: додаємо сортування за замовчуванням
+      }),
+      prisma.workspace.count({ where }),
+    ]);
+
+    return {
+      // ua: повертаємо воркспейси та мета-дані для пагінації
+      workspaces,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
-      include: {
-        _count: { select: { users: true, categories: true } },
-      },
-    });
+    };
   }
 
   // ua: update workspace (only owner can update)
