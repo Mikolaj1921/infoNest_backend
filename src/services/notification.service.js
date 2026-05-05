@@ -1,6 +1,7 @@
 // ua: сервіс для керування внутрішніми сповіщеннями користувачів
 
 const prisma = require('../config/db');
+const { getPagination } = require('../utils/pagination'); // ua: пагінація
 
 class NotificationService {
   // ua: створення нового сповіщення
@@ -16,11 +17,29 @@ class NotificationService {
   }
 
   // ua: отримання всіх сповіщень користувача
-  async getUserNotifications(userId) {
-    return await prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getUserNotifications(userId, query) {
+    const { skip, take, page, limit } = getPagination(query); // ua: параметри пагінації
+
+    // ua: паралельне отримання даних та загальної кількості сповіщень
+    const [notifications, totalCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: { userId },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.count({ where: { userId } }),
+    ]);
+
+    return {
+      notifications,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
   }
 
   // ua: позначення сповіщення як прочитаного

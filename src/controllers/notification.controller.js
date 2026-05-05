@@ -7,12 +7,14 @@ const asyncHandler = require('../utils/asyncHandler');
 exports.getMyNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const notifications = await notificationService.getUserNotifications(userId);
+  const result = await notificationService.getUserNotifications(
+    userId,
+    req.query,
+  );
 
   res.status(200).json({
     success: true,
-    results: notifications.length,
-    data: { notifications },
+    data: result,
   });
 });
 
