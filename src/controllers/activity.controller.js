@@ -3,13 +3,14 @@ const activityService = require('../services/activity.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 exports.getWorkspaceActivity = asyncHandler(async (req, res) => {
-  const { id } = req.params; // ua: ід воркспейсу
+  const { id } = req.params;
 
-  const activity = await activityService.getWorkspaceActivity(id);
+  // ua: update - пагінація для стрічки активності воркспейсу - отримуємо параметри пагінації
+  // з query (page, limit) і передаємо їх у сервіс
+  const result = await activityService.getWorkspaceActivity(id, req.query);
 
   res.status(200).json({
     success: true,
-    results: activity.length,
-    data: { activity },
+    data: result, // ua: масив activity, і об'єкт pagination (замість окремого поля totalCount)
   });
 });

@@ -1,6 +1,7 @@
 // ua: сервіс для роботи з активностями (логами) користувачів
 
 const prisma = require('../config/db');
+const { getPagination } = require('../utils/pagination');
 
 class ActivityService {
   // ua: створення запису про подію
@@ -28,22 +29,39 @@ class ActivityService {
     }
   }
   // ua: отримання стрічки активності для воркспейсу
-  async getWorkspaceActivity(workspaceId) {
-    return await prisma.activity.findMany({
-      where: { workspaceId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
+  async getWorkspaceActivity(workspaceId, query) {
+    const { skip, take, page, limit } = getPagination(query);
+
+    const [activity, totalCount] = await Promise.all([
+      prisma.activity.findMany({
+        where: { workspaceId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip, // ua: пропускаємо певну кількість записів для пагінації
+        take, // ua: обмежуємо кількість записів, які повертаються для пагінації
+      }),
+      prisma.activity.count({ where: { workspaceId } }),
+    ]);
+
+    return {
+      // ua: масив активностей та інформацію про пагінацію
+      activity,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 50, // ua: обмеження останніми 50 подіями
-    });
+    };
   }
 }
 
