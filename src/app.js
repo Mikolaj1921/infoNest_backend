@@ -12,6 +12,10 @@ const { redisStore } = require('./config/redis');
 const morgan = require('morgan'); // ua: перенесено сюди для цілісності
 const config = require('./config/index'); // load our validated config
 
+// docs
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
 // ua: імпорт роутів та глобального обробника помилок
 const healthRoutes = require('./routes/health.routes');
 // auth
@@ -68,6 +72,9 @@ app.use(
 
 app.use(express.json({ limit: '10kb' })); // parse JSON with size limit
 app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
+
+// Route for API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/api/health', healthRoutes);
