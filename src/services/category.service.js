@@ -40,20 +40,18 @@ class CategoryService {
       where: { id: workspaceId },
     });
 
-    // ua: якщо воркспейс не знайдено, error повернути
     if (!workspace) {
       throw new AppError('Workspace not found', 404);
     }
 
-    // ua: отримання категорій для воркспейсу + кількість документів у кожній категорії
-    // ua: додано пагінацію та повернення результату разом із мета-даними
+    // ua: додаємо return та Promise.all для пагінації
     const [categories, totalCount] = await Promise.all([
       prisma.category.findMany({
-        where: { workspaceId: workspaceId }, // ua: перевірка, чи існує воркспейс
+        where: { workspaceId: workspaceId },
         skip,
         take,
         include: {
-          _count: { select: { documents: true } }, // ua:  кількість документів у категорії
+          _count: { select: { documents: true } },
         },
         orderBy: { name: 'asc' },
       }),
@@ -61,7 +59,6 @@ class CategoryService {
     ]);
 
     return {
-      // ua: повертаємо категорії та мета-дані для пагінації
       categories,
       pagination: {
         page,

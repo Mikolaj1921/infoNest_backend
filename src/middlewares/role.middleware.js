@@ -10,7 +10,8 @@ const restrictTo = (...allowedRoles) => {
     // ua: безпечне отримання workspaceId (перевіряємо чи існують body/params)
     let workspaceId =
       (req.params && req.params.workspaceId) ||
-      (req.body && req.body.workspaceId);
+      (req.body && req.body.workspaceId) ||
+      (req.query && req.query.workspaceId);
 
     // ua: ПРІОРИТЕТ 0 - Якщо створюємо документ (є categoryId в body, але немає прямого workspaceId)
     if (!workspaceId && req.body && req.body.categoryId) {
