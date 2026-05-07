@@ -7,7 +7,6 @@ describe('Activity Feed Integration Tests', () => {
     let token, user, workspace, category;
 
     beforeEach(async () => {
-        // ua: підготовка авторизації та базової структури
         const auth = await getAuthToken();
         token = auth.token;
         user = auth.user;
@@ -37,7 +36,6 @@ describe('Activity Feed Integration Tests', () => {
 
         expect(docRes.statusCode).toBe(201);
 
-        // ua: час базі для запису логів
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         const activityRes = await request(app)
@@ -45,16 +43,19 @@ describe('Activity Feed Integration Tests', () => {
             .set('Authorization', `Bearer ${token}`);
 
         expect(activityRes.statusCode).toBe(200);
-        expect(activityRes.body.results).toBeGreaterThan(0);
 
-        // ua:пошук логу
+        // ua:  перевіряємо довжину масиву всередині data.activity
+        expect(activityRes.body.data.activity.length).toBeGreaterThan(0);
+        // ua: перевіряємо, що пагінація також приходить
+        expect(activityRes.body.data.pagination.totalCount).toBeGreaterThan(0);
+
         const log = activityRes.body.data.activity.find(
             (a) => a.action === 'CREATE_DOCUMENT'
         );
 
         expect(log).toBeDefined();
         expect(log.entityName).toBe('Audit Document');
-        expect(log.user.name).toBe(user.name); // ua: перевірка чи підтягнувся include юзера
+        expect(log.user.name).toBe(user.name);
     });
 
     test('should return 403 when user is not a member of the workspace', async () => {

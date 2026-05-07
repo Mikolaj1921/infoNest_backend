@@ -45,9 +45,13 @@ describe('Notifications System Integration Tests', () => {
             .set('Authorization', `Bearer ${tokenOfReceiver}`);
 
         expect(notifyRes.statusCode).toBe(200);
-        expect(notifyRes.body.results).toBe(1);
 
+        // ua: перевірка, що сповіщення дійсно створилося і є в масиві notifications
+        expect(notifyRes.body.data.notifications.length).toBe(1);
+
+        // ua: витягування першого сповіщення для перевірки його полів
         const notification = notifyRes.body.data.notifications[0];
+
         expect(notification.type).toBe('INVITE');
         expect(notification.isRead).toBe(false);
         expect(notification.title).toBe('New Workspace Invitation');
