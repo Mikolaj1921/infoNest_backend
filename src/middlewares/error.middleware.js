@@ -1,12 +1,18 @@
 const config = require('../config');
 const { ZodError } = require('zod');
+const logger = require('../utils/logger');
 
 // eslint-disable-next-line
 module.exports = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
-  console.error(`[ERROR] ${req.method} ${req.url} - ${err.stack}`);
+  // ua: замніа - console.error на logger.error для запису помилок у logs/error.log
+  logger.error(`[ERROR] ${req.method} ${req.url} - ${err.message}`, {
+    stack: err.stack,
+    path: req.url,
+    method: req.method,
+  });
 
   // обробка для помилок Zod
   if (err instanceof ZodError) {
