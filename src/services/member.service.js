@@ -1,6 +1,8 @@
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
 const notificationService = require('./notification.service');
+// logger
+const logger = require('../utils/logger');
 
 class MemberService {
   // Add user to workspace
@@ -48,11 +50,22 @@ class MemberService {
     });
 
     // ua: створення внутрішнього сповіщення для доданого користувача
-    notificationService.createNotification(userToAdd.id, {
-      title: 'New Workspace Invitation',
-      message: `You have been added to the workspace "${workspace.name}" as ${role}`,
-      type: 'INVITE',
-    });
+    try {
+      await notificationService.createNotification(userToAdd.id, {
+        title: 'New Workspace Invitation',
+        message: `You have been added to the workspace "${workspace.name}" as ${role}`,
+        type: 'INVITE',
+      });
+    } catch (err) {
+      // ua: логуємо помилку, але не перериваємо основний процес додавання мембера
+      logger.error(
+        `[Notification Error]: Failed to send invite notification to user ${userToAdd.id}`,
+        {
+          error: err.message,
+          workspaceId,
+        },
+      );
+    }
 
     return newMembership;
   }
@@ -72,11 +85,22 @@ class MemberService {
     });
 
     // ua: сповіщення користувача про зміну його ролі
-    notificationService.createNotification(userId, {
-      title: 'Role Updated',
-      message: `Your role in workspace "${updatedMembership.workspace.name}" has been changed to ${newRole}`,
-      type: 'ROLE_CHANGE',
-    });
+    try {
+      await notificationService.createNotification(userId, {
+        title: 'Role Updated',
+        message: `Your role in workspace "${updatedMembership.workspace.name}" has been changed to ${newRole}`,
+        type: 'ROLE_CHANGE',
+      });
+    } catch (err) {
+      // ua: логуємо збій відправки сповіщення
+      logger.error(
+        `[Notification Error]: Failed to send role update notification to user ${userId}`,
+        {
+          error: err.message,
+          workspaceId,
+        },
+      );
+    }
 
     return updatedMembership;
   }

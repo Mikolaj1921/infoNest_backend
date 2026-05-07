@@ -7,6 +7,8 @@ const prisma = require('../config/db');
 const config = require('../config/index');
 const AppError = require('../utils/appError');
 const activityService = require('./activity.service'); // ua: підключаємо сервіс активності
+// logger
+const logger = require('../utils/logger');
 
 class FileService {
   // ua: Завантаження файлу в хмару та запис метаданих у БД
@@ -24,15 +26,25 @@ class FileService {
     // ua: генерування унік імені файлу
     const fileKey = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
 
-    // ua: відправка файлу в Cloudflare R2
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: config.R2_BUCKET_NAME,
-        Key: fileKey,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      }),
-    );
+    try {
+      // ua: відправка файлу в Cloudflare R2
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: config.R2_BUCKET_NAME,
+          Key: fileKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }),
+      );
+    } catch (err) {
+      // ua: лог помилку завантаження, аби розуміти причину збою R2
+      logger.error(`[R2 Upload Error]: Failed to upload ${file.originalname}`, {
+        error: err.message,
+        userId,
+        documentId,
+      });
+      throw new AppError('Failed to upload file to storage', 500);
+    }
 
     // ua: формування URL та збереження запису в базі даних
     const fileUrl = `${config.R2_ENDPOINT}/${config.R2_BUCKET_NAME}/${fileKey}`;
@@ -78,13 +90,26 @@ class FileService {
     // ua: витягування Key (назву файлу в хмарі) з url
     const fileKey = fileRecord.url.split('/').pop();
 
-    // ua: видалення фізичного обєкта з Cloudflare
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: config.R2_BUCKET_NAME,
-        Key: fileKey,
-      }),
-    );
+    try {
+      // ua: видалення фізичного обєкта з Cloudflare
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: config.R2_BUCKET_NAME,
+          Key: fileKey,
+        }),
+      );
+    } catch (err) {
+      // ua: логуємо, якщо файл не видалився з хмари
+      logger.error(
+        `[R2 Delete Error]: Failed to delete ${fileKey} from cloud`,
+        {
+          error: err.message,
+          fileId,
+        },
+      );
+      // ua: throw кидаємо для безпеки
+      throw new AppError('Failed to delete file from cloud storage', 500);
+    }
 
     // ua: видалення запису з бази даних
     await prisma.file.delete({

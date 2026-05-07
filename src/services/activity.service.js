@@ -2,6 +2,8 @@
 
 const prisma = require('../config/db');
 const { getPagination } = require('../utils/pagination');
+// logger - для запису помилок
+const logger = require('../utils/logger');
 
 class ActivityService {
   // ua: створення запису про подію
@@ -25,7 +27,11 @@ class ActivityService {
       });
     } catch (error) {
       // ua: не переривається робота програми, якщо лог не записався, але вивід помилки в консоль
-      console.error(`[Activity Log Error]: ${error.message}`);
+      logger.error(`[Activity Log Error]: ${error.message}`, {
+        workspaceId,
+        userId,
+        action,
+      });
     }
   }
   // ua: отримання стрічки активності для воркспейсу

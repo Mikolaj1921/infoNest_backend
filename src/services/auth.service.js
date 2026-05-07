@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const AppError = require('../utils/appError');
 const prisma = require('../config/db');
 const activityService = require('./activity.service'); // ua:  сервіс активності
+const logger = require('../utils/logger');
 
 // ua: сервіс для реєстрації та логіну користувачів
 class AuthService {
@@ -133,7 +134,14 @@ class AuthService {
     // ua: чек по всіх файлах користувача та видаляємо їх із хмари
     const deleteFilesPromises = user.files.map((file) =>
       fileService.deleteFile(file.id).catch((err) => {
-        console.error(`Failed to delete file ${file.id} from R2:`, err.message);
+        // logger saves the error
+        logger.error(
+          `Failed to delete file ${file.id} from R2 during account deletion: ${err.message}`,
+          {
+            userId,
+            fileId: file.id,
+          },
+        );
       }),
     );
 
