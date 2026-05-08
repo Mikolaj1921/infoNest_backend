@@ -1,5 +1,6 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
+import pluginSecurity from "eslint-plugin-security";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -16,6 +17,8 @@ export default [
     },
 
     pluginJs.configs.recommended,
+    pluginSecurity.configs.recommended,
+
     {
         languageOptions: {
             ecmaVersion: "latest",
@@ -28,6 +31,7 @@ export default [
         rules: {
             "no-unused-vars": "warn",
             "no-console": "off",
+            "security/detect-object-injection": "off"
         },
     },
 ];

@@ -7,7 +7,8 @@
     "dev": "nodemon server.js",
     "build": "tsc",
     "start": "node dist/server.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "security-check": "npm audit --audit-level=high && npx eslint . --plugin security"
   },
   "keywords": [
     "infoNest"
@@ -52,6 +53,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^4.0.0",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
