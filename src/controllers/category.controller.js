@@ -53,3 +53,14 @@ exports.deleteCategory = asyncHandler(async (req, res) => {
   // ua: 204 не передбачає тіла відповіді, тільки статус
   res.status(204).send();
 });
+
+exports.getWorkspaceStructure = asyncHandler(async (req, res) => {
+  const { id } = req.params; // ID воркспейсу з параметрів URL
+
+  const structure = await categoryService.getWorkspaceStructure(id);
+
+  res.status(200).json({
+    success: true,
+    data: structure,
+  });
+});

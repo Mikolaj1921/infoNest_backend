@@ -109,6 +109,30 @@ class CategoryService {
 
     return category;
   }
+
+  // ua: структура (категорії + вкладені документи)
+  async getWorkspaceStructure(workspaceId) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new AppError('Workspace not found', 404);
+    }
+
+    // папки разом із масивом документів у кожній
+    const structure = await prisma.category.findMany({
+      where: { workspaceId: workspaceId },
+      include: {
+        documents: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return structure;
+  }
 }
 
 module.exports = new CategoryService();

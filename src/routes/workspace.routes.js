@@ -1,6 +1,7 @@
 const express = require('express');
 // controllers
 const workspaceController = require('../controllers/workspace.controller');
+const categoryController = require('../controllers/category.controller');
 const memberController = require('../controllers/member.controller');
 const activityController = require('../controllers/activity.controller'); // ua: контролер для стрічки активності
 // middlewares
@@ -39,6 +40,9 @@ router.get(
   validate(getWorkspaceActivitySchema),
   activityController.getWorkspaceActivity,
 );
+
+// ua: /:id/categories - для отримання списку категорій конкретного воркспейсу
+router.get('/:id/structure', categoryController.getWorkspaceStructure);
 
 // ua: /:id - для отримання, оновлення та видалення конкретного воркспейсу
 router
