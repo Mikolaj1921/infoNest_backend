@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  
+  url      = env("DATABASE_URL")
 }
 
 // Users
@@ -27,6 +27,7 @@ model User {
   files      File[]
   activities Activity[]  // ua: зв'язок з активністю
   notifications Notification[]  // reletion with notifications
+  boardTasks    BoardTask[] // ua: дошка таск (типу трело)
 
   ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
 }
@@ -44,6 +45,8 @@ model Workspace {
   users       UserWorkspace[]
   categories  Category[]
   activities  Activity[]  // ua: зв'язок з активністю
+  taskCategories TaskCategory[] // ua: зв'язок з табтаск
+  whiteboards    Whiteboard[]
 
   @@index([ownerId]) // ua:  для прискорення отримання списку воркспейсів власника
 }
@@ -90,6 +93,7 @@ model Document {
   owner       User        @relation(fields: [ownerId], references: [id])
   files       File[]
   revisions   Revision[]
+  boardTasks  BoardTask[]
 
   @@index([categoryId]) // ua: критично для отримання списку документів у папці
   @@index([ownerId])    // ua: прискорює пошук власних документів юзера
@@ -123,6 +127,55 @@ model Revision {
   @@index([documentId]) // ua: для швидкого отримання історії конкретного документа
 }
 
+model TaskCategory {
+  id          String   @id @default(cuid())
+  name        String
+  workspaceId String
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  boardTasks  BoardTask[]
+  whiteboards Whiteboard[]
+
+  @@index([workspaceId])
+}
+
+model BoardTask {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  columnId    String
+  ownerId     String
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  position    Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  column    TaskCategory @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  owner     User         @relation(fields: [ownerId], references: [id])
+  documents Document[]
+
+  @@index([columnId])
+  @@index([ownerId])
+}
+
+model Whiteboard {
+  id          String   @id @default(cuid())
+  workspaceId String
+  columnId    String?
+  elements    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  column    TaskCategory? @relation(fields: [columnId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+}
+
 // ua: Модель для логування активності у системі
 model Activity {
   id          String   @id @default(cuid())
@@ -145,7 +198,7 @@ model Notification {
   id          String   @id @default(cuid())
   userId      String   // ua: кому призначене сповіщення
   title       String   // ua: заголовок (напр. "Нове запрошення")
-  message     String   // ua: текст повідомлення
+  message     String   // ua: text повідомлення
   type        String   // ua: тип (напр. "INVITE", "ROLE_CHANGE", "SYSTEM")
   isRead      Boolean  @default(false) // ua: чи прочитав користувач
   createdAt   DateTime @default(now())
@@ -173,4 +226,10 @@ enum DocumentVisibility {
 enum WorkspaceVisibility {
   PRIVATE
   PUBLIC
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
