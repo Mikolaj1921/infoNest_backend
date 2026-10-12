@@ -28,6 +28,7 @@ const documentRouter = require('./routes/document.routes'); // documents
 const fileRouter = require('./routes/file.routes'); // files
 const searchRoutes = require('./routes/search.routes'); // files
 const notificationRoutes = require('./routes/notification.routes'); // notifications
+const boardTaskRoutes = require('./routes/boardTask.routes'); // board tasks
 const userRoutes = require('./routes/user.routes'); // users (profile, settings)
 // error handling middleware
 const errorMiddleware = require('./middlewares/error.middleware');
@@ -97,6 +98,7 @@ app.use('/api/files', fileRouter);
 app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/board-tasks', boardTaskRoutes);
 
 // error handling middleware
 // ua: глобальний обробник помилок
