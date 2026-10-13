@@ -6,6 +6,9 @@ const prisma = require('../src/config/db');
 // спочатку дочірні, потім батьківські
 // ua: Очищення таблиць перед кожним тестом
 beforeEach(async () => {
+    await prisma.whiteboard.deleteMany();
+    await prisma.boardTask.deleteMany();
+    await prisma.taskCategory.deleteMany();
     // ua: видалення найглибших залежностей
     await prisma.activity.deleteMany();
     await prisma.revision.deleteMany();

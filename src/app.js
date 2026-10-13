@@ -29,6 +29,7 @@ const fileRouter = require('./routes/file.routes'); // files
 const searchRoutes = require('./routes/search.routes'); // files
 const notificationRoutes = require('./routes/notification.routes'); // notifications
 const boardTaskRoutes = require('./routes/boardTask.routes'); // board tasks
+const taskCategoryRoutes = require('./routes/taskCategory.routes'); // task categories
 const whiteboardRoutes = require('./routes/whiteboard.routes'); // whiteboard
 const userRoutes = require('./routes/user.routes'); // users (profile, settings)
 // error handling middleware
@@ -101,6 +102,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/board-tasks', boardTaskRoutes);
 app.use('/api/whiteboards', whiteboardRoutes);
+app.use('/api/task-categories', taskCategoryRoutes);
 // error handling middleware
 // ua: глобальний обробник помилок
 app.use(errorMiddleware);

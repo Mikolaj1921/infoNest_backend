@@ -1,47 +1,63 @@
-// Validation schemas for Kanban-related operations
+// fix: юзання zod для валідації
 
-const Joi = require('joi');
+const { z } = require('zod');
 
-// schema for creating a new task category
-const createTaskCategorySchema = Joi.object({
-  name: Joi.string().required().trim().max(100),
-  workspaceId: Joi.string().required(),
+const createTaskCategorySchema = z.object({
+  body: z.object({
+    name: z
+      .string({ required_error: 'Name is required' })
+      .trim()
+      .min(1)
+      .max(100),
+    workspaceId: z.string({ required_error: 'Workspace ID is required' }),
+  }),
 });
 
-// schema for updating an existing task category
-const updateTaskCategorySchema = Joi.object({
-  name: Joi.string().required().trim().max(100),
+const updateTaskCategorySchema = z.object({
+  body: z.object({
+    name: z
+      .string({ required_error: 'Name is required' })
+      .trim()
+      .min(1)
+      .max(100),
+  }),
 });
 
-// schema for creating a new board task
-const createBoardTaskSchema = Joi.object({
-  title: Joi.string().required().trim().max(200),
-  description: Joi.string().allow('', null),
-  columnId: Joi.string().required(),
-  priority: Joi.string().valid('LOW', 'MEDIUM', 'HIGH').default('MEDIUM'),
-  dueDate: Joi.date().allow(null),
+const createBoardTaskSchema = z.object({
+  body: z.object({
+    title: z
+      .string({ required_error: 'Title is required' })
+      .trim()
+      .min(1)
+      .max(200),
+    description: z.string().nullable().optional(),
+    columnId: z.string({ required_error: 'Column ID is required' }),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
+    dueDate: z.string().datetime().nullable().optional(),
+  }),
 });
 
-// schema for updating an existing board task
-const updateBoardTaskSchema = Joi.object({
-  title: Joi.string().trim().max(200),
-  description: Joi.string().allow('', null),
-  columnId: Joi.string(),
-  priority: Joi.string().valid('LOW', 'MEDIUM', 'HIGH'),
-  dueDate: Joi.date().allow(null),
+const updateBoardTaskSchema = z.object({
+  body: z.object({
+    title: z.string().trim().max(200).optional(),
+    description: z.string().nullable().optional(),
+    columnId: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+    dueDate: z.string().datetime().nullable().optional(),
+  }),
 });
 
-// schema for reordering tasks within a column
-const reorderTasksSchema = Joi.object({
-  tasks: Joi.array()
-    .items(
-      Joi.object({
-        id: Joi.string().required(),
-        position: Joi.value().required(),
-        columnId: Joi.string().required(),
+const reorderTasksSchema = z.object({
+  body: z.object({
+    tasks: z.array(
+      z.object({
+        id: z.string({ required_error: 'Task ID is required' }),
+
+        position: z.number().int(),
+        columnId: z.string({ required_error: 'Column ID is required' }),
       }),
-    )
-    .required(),
+    ),
+  }),
 });
 
 module.exports = {
