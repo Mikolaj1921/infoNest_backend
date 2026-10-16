@@ -8,14 +8,20 @@ const validate = (schema) => (req, res, next) => {
     });
 
     // апдейт даних на валідовані (Zod)
-    req.body = validatedData.body;
-    req.query = validatedData.query;
-    req.params = validatedData.params;
+    if (validatedData.body !== undefined) {
+      req.body = validatedData.body;
+    }
+
+    if (validatedData.query !== undefined) {
+      req.query = validatedData.query;
+    }
+
+    if (validatedData.params !== undefined) {
+      req.params = validatedData.params;
+    }
 
     next();
   } catch (error) {
-    // Zod у наш глобальний обробник
-
     error.statusCode = 400;
     next(error);
   }

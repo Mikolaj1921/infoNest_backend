@@ -44,6 +44,10 @@ const updateBoardTaskSchema = z.object({
     columnId: z.string().optional(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
     dueDate: z.string().datetime().nullable().optional(),
+    workspaceId: z.string().optional(),
+  }),
+  params: z.object({
+    id: z.string().min(1),
   }),
 });
 
