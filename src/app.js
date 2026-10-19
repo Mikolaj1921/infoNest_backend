@@ -45,7 +45,7 @@ const stream = {
   write: (message) => logger.info(message.trim()),
 };
 
-//  Limiter
+// Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -54,21 +54,12 @@ const limiter = rateLimit({
   legacyHeaders: false,
   // Якщо store існує (Redis підключився) — юзається його | інакше — undefined (вбудована пам'ять)
   store: redisStore || undefined,
+  // Не враховуємо CORS preflight-запити в ліміті
+  skip: (req) => req.method === 'OPTIONS',
 });
-
-// ua: Морган для логування HTTP-запитів (вимкнено в тестах) та лімітер
-if (config.NODE_ENV !== 'test') {
-  // ua: використовуємо наш stream, щоб HTTP-запити потрапляли у combined.log
-  app.use(
-    morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev', { stream }),
-  );
-  app.use('/api', limiter);
-}
 
 // ua: проксі - для деплою (дає можливість отримувати реальну IP-адресу клієнта)
 app.set('trust proxy', 1); // trust first proxy
-// ua: застосування лімітеру до всіх routes
-app.use('/api', limiter);
 
 // ua: базовий захист заголовків та налаштування CSP
 app.use(helmet());
@@ -80,6 +71,17 @@ app.use(
     credentials: true,
   }),
 );
+
+// ua: Морган для логування HTTP-запитів (вимкнено в тестах) та лімітер
+if (config.NODE_ENV !== 'test') {
+  // ua: використовуємо наш stream, щоб HTTP-запити потрапляли у combined.log
+  app.use(
+    morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev', { stream }),
+  );
+
+  // ua: застосування лімітеру до всіх routes (лише один раз)
+  app.use('/api', limiter);
+}
 
 // ua: обмеження розміру JSON payload та використання cookie parser з секретом для підписаних куків
 app.use(express.json({ limit: '10kb' })); // parse JSON with size limit
