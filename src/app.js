@@ -84,7 +84,7 @@ if (config.NODE_ENV !== 'test') {
 }
 
 // ua: обмеження розміру JSON payload та використання cookie parser з секретом для підписаних куків
-app.use(express.json({ limit: '10kb' })); // parse JSON with size limit
+app.use(express.json({ limit: '20mb' })); // parse JSON with size limit
 app.use(cookieParser(config.COOKIE_SECRET)); // use secret for signed cookies
 
 //---
