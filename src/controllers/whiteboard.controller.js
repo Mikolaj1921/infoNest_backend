@@ -13,14 +13,22 @@ exports.getOrCreateWhiteboard = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: { whiteboard },
+    data: {
+      whiteboard,
+      role: req.userRole,
+    },
   });
 });
 
 exports.updateWhiteboard = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const workspaceId = req.query.workspaceId;
 
-  const whiteboard = await whiteboardService.updateWhiteboard(id, req.body);
+  const whiteboard = await whiteboardService.updateWhiteboard(
+    id,
+    workspaceId,
+    req.body,
+  );
 
   res.status(200).json({
     success: true,
@@ -32,9 +40,11 @@ exports.updateWhiteboard = asyncHandler(async (req, res) => {
 exports.updateWhiteboardSettings = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { settings } = req.body;
+  const workspaceId = req.query.workspaceId;
 
   const whiteboard = await whiteboardService.updateWhiteboardSettings(
     id,
+    workspaceId,
     settings,
   );
 

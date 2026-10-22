@@ -57,18 +57,13 @@ class WhiteboardService {
   }
 
   // ua: оновлення елементів дошки та збережених налаштувань
-  async updateWhiteboard(id, payload) {
+  async updateWhiteboard(id, workspaceId, payload) {
     //console.log(
     //  'WHITEBOARD UPDATE PAYLOAD:',
     //  JSON.stringify(payload, null, 2),
     //);
-    const whiteboard = await prisma.whiteboard.findUnique({
-      where: { id },
-    });
 
-    if (!whiteboard) {
-      throw new AppError('Whiteboard session not found', 404);
-    }
+    const whiteboard = await this.getWhiteboardForWorkspace(id, workspaceId);
 
     // ua: підтримка старого формату, де payload є масивом елементів
     const isLegacyArray = Array.isArray(payload);
@@ -94,9 +89,10 @@ class WhiteboardService {
     //  'WHITEBOARD APP STATE BEFORE DB:',
     //  JSON.stringify(appState, null, 2),
     //);
+
     // ua: збереження елементів без перезапису окремих налаштувань дошки
     return prisma.whiteboard.update({
-      where: { id },
+      where: { id: whiteboard.id },
       data: {
         elements: sanitizedElements,
       },
@@ -104,7 +100,9 @@ class WhiteboardService {
   }
 
   // ua: окреме збереження налаштувань інтерактивної дошки (вибрані налаштування)
-  async updateWhiteboardSettings(id, settings) {
+  async updateWhiteboardSettings(id, workspaceId, settings) {
+    const whiteboard = await this.getWhiteboardForWorkspace(id, workspaceId);
+
     if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
       throw new AppError('Invalid whiteboard settings', 400);
     }
@@ -128,14 +126,6 @@ class WhiteboardService {
       throw new AppError('Invalid whiteboard theme', 400);
     }
 
-    const whiteboard = await prisma.whiteboard.findUnique({
-      where: { id },
-    });
-
-    if (!whiteboard) {
-      throw new AppError('Whiteboard session not found', 404);
-    }
-
     const currentSettings =
       whiteboard.settings &&
       typeof whiteboard.settings === 'object' &&
@@ -144,7 +134,7 @@ class WhiteboardService {
         : {};
 
     return prisma.whiteboard.update({
-      where: { id },
+      where: { id: whiteboard.id },
       data: {
         settings: {
           ...currentSettings,
@@ -152,6 +142,26 @@ class WhiteboardService {
         },
       },
     });
+  }
+
+  // ua: перевірка належності дошки до авторизованого воркспейсу
+  async getWhiteboardForWorkspace(id, workspaceId) {
+    if (typeof workspaceId !== 'string' || !workspaceId.trim()) {
+      throw new AppError('Workspace ID is required', 400);
+    }
+
+    const whiteboard = await prisma.whiteboard.findFirst({
+      where: {
+        id,
+        workspaceId,
+      },
+    });
+
+    if (!whiteboard) {
+      throw new AppError('Whiteboard not found in this workspace', 404);
+    }
+
+    return whiteboard;
   }
 }
 
