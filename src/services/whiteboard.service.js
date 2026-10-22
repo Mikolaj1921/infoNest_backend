@@ -1,8 +1,29 @@
 const prisma = require('../config/db');
 const AppError = require('../utils/appError');
 
+// ua: налаштування Excalidraw, які потрібно зберігати між сесіями (вибрані)
+const PERSISTED_APP_STATE_KEYS = [
+  'theme',
+  'viewBackgroundColor',
+  'gridSize',
+  'gridModeEnabled',
+  'zenModeEnabled',
+  'currentItemStrokeColor',
+  'currentItemBackgroundColor',
+  'currentItemFillStyle',
+  'currentItemStrokeWidth',
+  'currentItemStrokeStyle',
+  'currentItemRoughness',
+  'currentItemOpacity',
+  'currentItemFontFamily',
+  'currentItemFontSize',
+  'currentItemTextAlign',
+  'currentItemStartArrowhead',
+  'currentItemEndArrowhead',
+];
+
+// ua: отримання або створення дошки для всього воркспейсу або конкретної колонки
 class WhiteboardService {
-  // ua: отримання або створення дошки для всього воркспейсу або конкретної колонки
   async getOrCreateWhiteboard(workspaceId, columnId = null) {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -26,7 +47,8 @@ class WhiteboardService {
         data: {
           workspaceId,
           columnId: columnId || null,
-          elements: [], // default empty
+          elements: [],
+          settings: { theme: 'light' },
         },
       });
     }
@@ -34,8 +56,12 @@ class WhiteboardService {
     return whiteboard;
   }
 
-  // ua: оновлення елементів дошки + санітизація текстових блоків
-  async updateWhiteboard(id, elements) {
+  // ua: оновлення елементів дошки та збережених налаштувань
+  async updateWhiteboard(id, payload) {
+    //console.log(
+    //  'WHITEBOARD UPDATE PAYLOAD:',
+    //  JSON.stringify(payload, null, 2),
+    //);
     const whiteboard = await prisma.whiteboard.findUnique({
       where: { id },
     });
@@ -44,22 +70,86 @@ class WhiteboardService {
       throw new AppError('Whiteboard session not found', 404);
     }
 
-    // ua: очищення текстових блоків фігур від можливих script інєкцій
-    const sanitizedElements = elements.map((el) => {
+    // ua: підтримка старого формату, де payload є масивом елементів
+    const isLegacyArray = Array.isArray(payload);
+    const incomingElements = isLegacyArray ? payload : payload?.elements;
+
+    if (!Array.isArray(incomingElements)) {
+      throw new AppError('Invalid whiteboard elements payload', 400);
+    }
+
+    // ua: очищення текстових блоків від HTML-тегів
+    const sanitizedElements = incomingElements.map((el) => {
       if (el && typeof el === 'object' && typeof el.text === 'string') {
         return {
           ...el,
-          text: el.text.replace(/</g, '&lt;').replace(/>/g, '&gt;'), // Просте екранування символів тегів
+          text: el.text.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         };
       }
+
       return el;
     });
 
-    // ua: оновлення дошки з санітизованими елементами
+    //console.log(
+    //  'WHITEBOARD APP STATE BEFORE DB:',
+    //  JSON.stringify(appState, null, 2),
+    //);
+    // ua: збереження елементів без перезапису окремих налаштувань дошки
     return prisma.whiteboard.update({
       where: { id },
       data: {
         elements: sanitizedElements,
+      },
+    });
+  }
+
+  // ua: окреме збереження налаштувань інтерактивної дошки (вибрані налаштування)
+  async updateWhiteboardSettings(id, settings) {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      throw new AppError('Invalid whiteboard settings', 400);
+    }
+
+    const filteredSettings = {};
+
+    for (const key of PERSISTED_APP_STATE_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(settings, key)) {
+        filteredSettings[key] = settings[key];
+      }
+    }
+
+    if (Object.keys(filteredSettings).length === 0) {
+      throw new AppError('No valid whiteboard settings provided', 400);
+    }
+
+    if (
+      filteredSettings.theme !== undefined &&
+      !['light', 'dark'].includes(filteredSettings.theme)
+    ) {
+      throw new AppError('Invalid whiteboard theme', 400);
+    }
+
+    const whiteboard = await prisma.whiteboard.findUnique({
+      where: { id },
+    });
+
+    if (!whiteboard) {
+      throw new AppError('Whiteboard session not found', 404);
+    }
+
+    const currentSettings =
+      whiteboard.settings &&
+      typeof whiteboard.settings === 'object' &&
+      !Array.isArray(whiteboard.settings)
+        ? whiteboard.settings
+        : {};
+
+    return prisma.whiteboard.update({
+      where: { id },
+      data: {
+        settings: {
+          ...currentSettings,
+          ...filteredSettings,
+        },
       },
     });
   }

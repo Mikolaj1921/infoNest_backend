@@ -1,5 +1,3 @@
-// controller whiteboard
-
 const whiteboardService = require('../services/whiteboard.service');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -21,9 +19,24 @@ exports.getOrCreateWhiteboard = asyncHandler(async (req, res) => {
 
 exports.updateWhiteboard = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { elements } = req.body;
 
-  const whiteboard = await whiteboardService.updateWhiteboard(id, elements);
+  const whiteboard = await whiteboardService.updateWhiteboard(id, req.body);
+
+  res.status(200).json({
+    success: true,
+    data: { whiteboard },
+  });
+});
+
+// ua: оновлення налаштувань дошки
+exports.updateWhiteboardSettings = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { settings } = req.body;
+
+  const whiteboard = await whiteboardService.updateWhiteboardSettings(
+    id,
+    settings,
+  );
 
   res.status(200).json({
     success: true,

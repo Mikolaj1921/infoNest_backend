@@ -15,19 +15,26 @@ const router = express.Router();
 
 router.use(protect);
 
-// Отримання або ініціалізація дошки
+// отримання або ініціалізація дошки
 router.get(
   '/workspace/:workspaceId',
   restrictTo('Owner', 'Admin', 'Editor', 'Viewer'),
   whiteboardController.getOrCreateWhiteboard,
 );
 
-// Збереження графічного стану дошки
+// збереження графічного стану дошки
 router.patch(
   '/:id',
   restrictTo('Owner', 'Admin', 'Editor'),
   validate(updateWhiteboardSchema),
   whiteboardController.updateWhiteboard,
+);
+
+// налаштування
+router.patch(
+  '/:id/settings',
+  restrictTo('Owner', 'Admin', 'Editor'),
+  whiteboardController.updateWhiteboardSettings,
 );
 
 module.exports = router;
