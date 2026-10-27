@@ -107,7 +107,7 @@ model File {
   size        Int
   createdAt   DateTime    @default(now())
 
-  document    Document    @relation(fields: [documentId], references: [id])
+  document    Document    @relation(fields: [documentId], references: [id],  onDelete: Cascade)
   owner       User        @relation(fields: [ownerId], references: [id])
 
   @@index([documentId]) // ua: прискорює отримання списку файлів документа
@@ -120,7 +120,7 @@ model Revision {
   content     String
   createdAt   DateTime    @default(now())
 
-  document    Document    @relation(fields: [documentId], references: [id])
+  document    Document    @relation(fields: [documentId], references: [id],  onDelete: Cascade)
   editor      User        @relation(fields: [editorId], references: [id])
 
   @@index([documentId]) // ua: для швидкого отримання історії конкретного документа
