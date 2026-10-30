@@ -37,6 +37,18 @@ exports.createDocument = asyncHandler(async (req, res) => {
   });
 });
 
+// ua: Отримання прикріплених файлів документа
+exports.getDocumentFiles = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const files = await documentService.getDocumentFiles(id);
+
+  res.status(200).json({
+    success: true,
+    data: files,
+  });
+});
+
 // ua: Отримання документа за id
 exports.getDocumentById = asyncHandler(async (req, res) => {
   const { id } = req.params;

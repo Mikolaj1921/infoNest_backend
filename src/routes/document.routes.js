@@ -35,6 +35,13 @@ router.get(
   documentController.getDocumentRevisions,
 );
 
+// ua: отримання всіх файлів документа
+router.get(
+  '/:id/files',
+  restrictTo('Owner', 'Admin', 'Editor', 'Viewer'),
+  documentController.getDocumentFiles,
+);
+
 // ua: отримання документа за id, оновлення та видалення
 router
   .route('/:id')

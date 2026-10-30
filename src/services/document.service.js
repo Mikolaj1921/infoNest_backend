@@ -77,6 +77,25 @@ class DocumentService {
     return newDocument;
   }
 
+  // ua: Отримання всіх прикріплених файлів документа
+  async getDocumentFiles(documentId) {
+    // ua: Перевіряємо, чи існує документ
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: { id: true },
+    });
+
+    if (!document) {
+      throw new AppError('Document not found', 404);
+    }
+
+    // ua: Отримуємо всі файли документа
+    return await prisma.file.findMany({
+      where: { documentId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // ua: Отримання документа за id
   async getDocumentById(id) {
     const document = await prisma.document.findUnique({
