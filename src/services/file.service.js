@@ -34,6 +34,7 @@ class FileService {
           Key: fileKey,
           Body: file.buffer,
           ContentType: file.mimetype,
+          ContentDisposition: 'inline',
         }),
       );
     } catch (err) {
@@ -47,7 +48,7 @@ class FileService {
     }
 
     // ua: формування URL та збереження запису в базі даних
-    const fileUrl = `${config.R2_ENDPOINT}/${config.R2_BUCKET_NAME}/${fileKey}`;
+    const fileUrl = `${process.env.R2_PUBLIC_URL}/${fileKey}`;
 
     const newFile = await prisma.file.create({
       data: {

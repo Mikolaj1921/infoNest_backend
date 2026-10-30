@@ -5,7 +5,7 @@ const AppError = require('../utils/appError');
 // ua: memoryStorage, щоб не зберігати файли на диску сервера
 const storage = multer.memoryStorage();
 
-// ua: Фільтр файлів (only pdf, images)
+// ua: Фільтр файлів (лише PDF та зображення)
 const fileFilter = (req, file, cb) => {
   if (
     file.mimetype.startsWith('image/') ||
@@ -14,7 +14,10 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     cb(
-      new AppError('Unsupported file type! Please upload images or PDFs.', 400),
+      new AppError(
+        'Unsupported file type. Only PDF files and images are allowed.',
+        400,
+      ),
       false,
     );
   }
