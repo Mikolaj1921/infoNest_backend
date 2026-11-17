@@ -64,10 +64,26 @@ const reorderTasksSchema = z.object({
   }),
 });
 
+// ua: схема валідації для зміни порядку колонок Kanban
+const reorderCategoriesSchema = z.object({
+  body: z.object({
+    workspaceId: z.string({ required_error: 'Workspace ID is required' }),
+    categories: z
+      .array(
+        z.object({
+          id: z.string({ required_error: 'Category ID is required' }),
+          position: z.number().int().min(0),
+        }),
+      )
+      .min(1, 'At least one category is required'),
+  }),
+});
+
 module.exports = {
   createTaskCategorySchema,
   updateTaskCategorySchema,
   createBoardTaskSchema,
   updateBoardTaskSchema,
   reorderTasksSchema,
+  reorderCategoriesSchema,
 };

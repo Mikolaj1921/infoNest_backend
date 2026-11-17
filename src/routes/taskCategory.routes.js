@@ -11,6 +11,7 @@ const validate = require('../middlewares/validate.middleware');
 const {
   createTaskCategorySchema,
   updateTaskCategorySchema,
+  reorderCategoriesSchema,
 } = require('../validations/kanban.validation');
 
 const router = express.Router();
@@ -28,6 +29,12 @@ router.post(
   restrictTo('Owner', 'Admin', 'Editor'),
   validate(createTaskCategorySchema),
   taskCategoryController.createCategory,
+);
+
+router.patch(
+  '/reorder',
+  validate(reorderCategoriesSchema),
+  taskCategoryController.reorderCategories,
 );
 
 router

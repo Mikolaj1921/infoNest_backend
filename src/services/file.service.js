@@ -10,6 +10,24 @@ const activityService = require('./activity.service'); // ua: підключає
 // logger
 const logger = require('../utils/logger');
 
+// ua: виправлення кодування назви файлу з multipart/form-data (фікс)
+const decodeFileName = (originalName) => {
+  if (!originalName) return originalName;
+
+  // ua: Busboy може декодувати UTF-8 як Latin-1.
+  // вибрані рядки
+  const looksMojibake = /Ã.|Å.|Ä.|Â.|Ð.|Ñ./.test(originalName);
+
+  if (!looksMojibake) return originalName;
+
+  const decoded = Buffer.from(originalName, 'latin1').toString('utf8');
+
+  // ua: як результат містить символ заміни, залишаємо оригінал
+  if (decoded.includes('\uFFFD')) return originalName;
+
+  return decoded;
+};
+
 class FileService {
   // ua: Завантаження файлу в хмару та запис метаданих у БД
   async uploadFile(file, documentId, userId) {
@@ -24,7 +42,8 @@ class FileService {
     }
 
     // ua: генерування унік імені файлу
-    const fileKey = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+    const originalFileName = decodeFileName(file.originalname);
+    const fileKey = `${Date.now()}-${originalFileName.replace(/\s+/g, '-')}`;
 
     try {
       // ua: відправка файлу в Cloudflare R2
@@ -52,7 +71,7 @@ class FileService {
 
     const newFile = await prisma.file.create({
       data: {
-        fileName: file.originalname,
+        fileName: originalFileName,
         url: fileUrl,
         size: file.size,
         documentId: documentId,

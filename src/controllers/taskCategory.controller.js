@@ -28,6 +28,21 @@ exports.getWorkspaceCategories = asyncHandler(async (req, res) => {
   });
 });
 
+// ua: зміна порядку колонок Kanban-дошки
+exports.reorderCategories = asyncHandler(async (req, res) => {
+  const { workspaceId, categories } = req.body;
+
+  const reorderedCategories = await taskCategoryService.reorderTaskCategories(
+    workspaceId,
+    categories,
+  );
+
+  res.status(200).json({
+    success: true,
+    data: { categories: reorderedCategories },
+  });
+});
+
 exports.updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;

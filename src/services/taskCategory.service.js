@@ -15,16 +15,19 @@ class TaskCategoryService {
       throw new AppError('Workspace not found', 404);
     }
 
-    // підрахунок: кількість колонок, щоб виставити нову в кінець списку
-    const count = await prisma.taskCategory.count({
+    // ua: визначення наступної позиції, щоб нова колонка була в кінці списку
+    const lastCategory = await prisma.taskCategory.aggregate({
       where: { workspaceId },
+      _max: { position: true },
     });
+
+    const nextPosition = (lastCategory._max.position ?? -1) + 1;
 
     const newCategory = await prisma.taskCategory.create({
       data: {
         name,
         workspaceId,
-        position: count,
+        position: nextPosition,
       },
     });
 
@@ -44,7 +47,7 @@ class TaskCategoryService {
     // Повертаємо колонки, відсортовані за позицією
     return prisma.taskCategory.findMany({
       where: { workspaceId },
-      orderBy: { position: 'asc' },
+      orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
       include: {
         boardTasks: {
           orderBy: { position: 'asc' },
@@ -53,6 +56,7 @@ class TaskCategoryService {
       },
     });
   }
+
   // ua: оновлення назви категорії завдань
   async updateTaskCategory(id, name) {
     const category = await prisma.taskCategory.findUnique({
@@ -68,6 +72,53 @@ class TaskCategoryService {
       data: { name },
     });
   }
+
+  // ua: зміна порядку колонок Kanban-дошки
+  async reorderTaskCategories(workspaceId, categoriesArray) {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new AppError('Workspace not found', 404);
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const existingCategories = await tx.taskCategory.findMany({
+        where: { workspaceId },
+        select: { id: true },
+      });
+
+      // ua: перевіряємо, що передано всі колонки саме цього робочого простору
+      const existingIds = new Set(
+        existingCategories.map((category) => category.id),
+      );
+      const receivedIds = categoriesArray.map((category) => category.id);
+
+      if (
+        existingIds.size !== receivedIds.length ||
+        receivedIds.some((id) => !existingIds.has(id))
+      ) {
+        throw new AppError('Invalid task categories for this workspace', 400);
+      }
+
+      // ua: зберігаємо нові позиції колонок
+      await Promise.all(
+        categoriesArray.map((category) =>
+          tx.taskCategory.update({
+            where: { id: category.id },
+            data: { position: category.position },
+          }),
+        ),
+      );
+
+      return tx.taskCategory.findMany({
+        where: { workspaceId },
+        orderBy: { position: 'asc' },
+      });
+    });
+  }
+
   // ua: видалення категорії завдань (колонки)
   async deleteTaskCategory(id) {
     const category = await prisma.taskCategory.findUnique({
@@ -78,8 +129,26 @@ class TaskCategoryService {
       throw new AppError('Task column not found', 404);
     }
 
-    await prisma.taskCategory.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      await tx.taskCategory.delete({
+        where: { id },
+      });
+
+      // ua: перенумеровуємо позиції колонок після видалення
+      const remainingCategories = await tx.taskCategory.findMany({
+        where: { workspaceId: category.workspaceId },
+        orderBy: { position: 'asc' },
+        select: { id: true },
+      });
+
+      await Promise.all(
+        remainingCategories.map((item, index) =>
+          tx.taskCategory.update({
+            where: { id: item.id },
+            data: { position: index },
+          }),
+        ),
+      );
     });
 
     return category;
