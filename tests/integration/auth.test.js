@@ -1,6 +1,15 @@
+
 const request = require('supertest');
 const app = require('../../src/app');
 const prisma = require('../../src/config/db');
+
+// ua: мок відправлення welcome email, щоб інтеграційні тести
+// не залежали від зовнішнього поштового сервісу
+jest.mock('../../src/utils/email', () =>
+    jest.fn().mockImplementation(() => ({
+        sendWelcome: jest.fn().mockResolvedValue(undefined),
+    })),
+);
 
 describe('Auth Integration Tests', () => {
     const testUser = {
@@ -12,91 +21,184 @@ describe('Auth Integration Tests', () => {
     // ua: тести для реєстрації користувача
     describe('POST /api/auth/register', () => {
         test('should successfully register a new user', async () => {
-            // ua: виклик API для реєстрації нового юзера
-            const res = await request(app)
+            const response = await request(app)
                 .post('/api/auth/register')
                 .send(testUser);
 
-            expect(res.statusCode).toBe(201);
-            expect(res.body.success).toBe(true);
-            expect(res.body.data.user.email).toBe(testUser.email);
-
-            // ua: перевірка в бд, чи юзер був створений
-            const userInDb = await prisma.user.findUnique({
-                where: { email: testUser.email },
-            });
-            expect(userInDb).not.toBeNull();
-            expect(userInDb.name).toBe(testUser.name);
-        });
-
-        test('should return 400 if email is already taken', async () => {
-            // ua: створення юзера наперед через prisma, щоб спровокувати помилку
-            await prisma.user.create({
-                data: {
+            expect(response.status).toBe(201);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.user).toEqual(
+                expect.objectContaining({
                     email: testUser.email,
                     name: testUser.name,
-                    password: 'hashed_password'
-                },
+                }),
+            );
+
+            // ua: перевірка, що пароль не повертається у відповіді
+            expect(response.body.data.user).not.toHaveProperty('password');
+
+            // ua: перевірка встановлення токенів у cookies
+            expect(response.headers['set-cookie']).toEqual(
+                expect.arrayContaining([
+                    expect.stringContaining('accessToken='),
+                    expect.stringContaining('refreshToken='),
+                ]),
+            );
+
+            // ua: перевірка фактичного створення користувача в БД
+            const createdUser = await prisma.user.findUnique({
+                where: { email: testUser.email },
             });
 
-            // ua: спроба зареєструватися з тим самим email через API
-            const res = await request(app)
+            expect(createdUser).not.toBeNull();
+            expect(createdUser.email).toBe(testUser.email);
+            expect(createdUser.password).not.toBe(testUser.password);
+        });
+
+        test('should return 400 when registering with an existing email', async () => {
+            await request(app)
                 .post('/api/auth/register')
                 .send(testUser);
 
-            expect(res.statusCode).toBe(400);
-            expect(res.body.message).toContain('exists');
+            const response = await request(app)
+                .post('/api/auth/register')
+                .send(testUser);
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+        });
+
+        test('should return 400 when registration data is invalid', async () => {
+            const response = await request(app)
+                .post('/api/auth/register')
+                .send({
+                    email: 'invalid-email',
+                    password: '123',
+                    name: 'A',
+                });
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
         });
     });
 
-    // ua: тести для входу в систему (Login)
+    // ua: тести для входу користувача
     describe('POST /api/auth/login', () => {
-        test('should successfully login user and return cookies', async () => {
-            // ua: реєстр юзера через API
-            await request(app).post('/api/auth/register').send(testUser);
+        beforeEach(async () => {
+            await request(app)
+                .post('/api/auth/register')
+                .send(testUser);
+        });
 
-            const res = await request(app)
+        test('should successfully log in with valid credentials', async () => {
+            const response = await request(app)
                 .post('/api/auth/login')
                 .send({
                     email: testUser.email,
                     password: testUser.password,
                 });
 
-            expect(res.statusCode).toBe(200);
-            expect(res.body.success).toBe(true);
-
-            // ua: перевірка чи встановлені куки з токенами
-            expect(res.header['set-cookie']).toBeDefined();
-            const hasAccessToken = res.header['set-cookie'].some((c) =>
-                c.includes('accessToken'),
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.user).toEqual(
+                expect.objectContaining({
+                    email: testUser.email,
+                    name: testUser.name,
+                }),
             );
-            expect(hasAccessToken).toBe(true);
+
+            // ua: пароль не повинен повертатися клієнту
+            expect(response.body.data.user).not.toHaveProperty('password');
+
+            // ua: перевірка встановлення токенів
+            expect(response.headers['set-cookie']).toEqual(
+                expect.arrayContaining([
+                    expect.stringContaining('accessToken='),
+                    expect.stringContaining('refreshToken='),
+                ]),
+            );
+        });
+
+        test('should return 401 when password is incorrect', async () => {
+            const response = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: testUser.email,
+                    password: 'wrong-password',
+                });
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
+        });
+
+        test('should return 401 when user does not exist', async () => {
+            const response = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'unknown@example.com',
+                    password: testUser.password,
+                });
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
+        });
+
+        test('should return 400 when login data is invalid', async () => {
+            const response = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'invalid-email',
+                    password: '',
+                });
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
         });
     });
 
-    // ua: тести для виходу із системи (Logout)
+    // ua: тести для виходу користувача
     describe('POST /api/auth/logout', () => {
-        test('should successfully logout and clear refresh token in DB', async () => {
-            // ua: лог щоб отримати актуальні куки
-            await request(app).post('/api/auth/register').send(testUser);
-            const loginRes = await request(app)
+        test('should successfully log out an authenticated user', async () => {
+            await request(app)
+                .post('/api/auth/register')
+                .send(testUser);
+
+            const loginResponse = await request(app)
                 .post('/api/auth/login')
-                .send({ email: testUser.email, password: testUser.password });
+                .send({
+                    email: testUser.email,
+                    password: testUser.password,
+                });
 
-            const cookies = loginRes.header['set-cookie'];
-
-            // ua: виклик логаутa, передаючи отримані куки
-            const res = await request(app)
+            const response = await request(app)
                 .post('/api/auth/logout')
-                .set('Cookie', cookies);
+                .set('Cookie', loginResponse.headers['set-cookie']);
 
-            expect(res.statusCode).toBe(200);
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
 
-            // ua: перевірка чи refreshToken у базі став нулл після логауту
-            const userInDb = await prisma.user.findUnique({
+            // ua: перевірка видалення refresh token із БД
+            const user = await prisma.user.findUnique({
                 where: { email: testUser.email },
             });
-            expect(userInDb.refreshToken).toBeNull();
+
+            expect(user.refreshToken).toBeNull();
+
+            // ua: перевірка очищення cookies у відповіді
+            expect(response.headers['set-cookie']).toEqual(
+                expect.arrayContaining([
+                    expect.stringContaining('accessToken=;'),
+                    expect.stringContaining('refreshToken=;'),
+                ]),
+            );
+        });
+
+        test('should return 401 when logging out without authentication', async () => {
+            const response = await request(app)
+                .post('/api/auth/logout');
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
         });
     });
 });

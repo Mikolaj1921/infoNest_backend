@@ -1,39 +1,34 @@
-// авто-видалення даних бд (після тестів)
 
+const path = require('path');
 const prisma = require('../src/config/db');
 
-// ua: Очищення таблиць перед кожним тестом
-// спочатку дочірні, потім батьківські
-// ua: Очищення таблиць перед кожним тестом
+// ua: перевірка, чи поточний тест є інтеграційним
+const isIntegrationTest = () => {
+    const testPath = expect.getState().testPath || '';
+    return testPath.split(path.sep).includes('integration');
+};
+
+// ua: очищення тестової бази перед кожним інтеграційним тестом
 beforeEach(async () => {
+    if (!isIntegrationTest()) return;
+
     await prisma.whiteboard.deleteMany();
     await prisma.boardTask.deleteMany();
     await prisma.taskCategory.deleteMany();
-    // ua: видалення найглибших залежностей
     await prisma.activity.deleteMany();
     await prisma.revision.deleteMany();
     await prisma.file.deleteMany();
-
-    // ua: видалення контенту
     await prisma.document.deleteMany();
     await prisma.category.deleteMany();
-
-    // ua: видалення звязків (Membership)
     await prisma.userWorkspace.deleteMany();
-
-    // ua: видаленя воркспейсів (вони посилаються на юзер як на овнера)
     await prisma.workspace.deleteMany();
-
-
-    // ua: видалення повідомлень 
     await prisma.notification.deleteMany();
-
-
-    // ua: видалення користувачів (вони посилаються на воркспейс як на овнера)
     await prisma.user.deleteMany();
 });
 
-// ua: Закриття з'єднання після всіх тестів
+// ua: відключення Prisma після інтеграційних тестів
 afterAll(async () => {
+    if (!isIntegrationTest()) return;
+
     await prisma.$disconnect();
 });
