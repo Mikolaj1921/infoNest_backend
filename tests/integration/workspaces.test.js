@@ -1,93 +1,312 @@
+
 const request = require('supertest');
 const app = require('../../src/app');
 const { getAuthToken } = require('../helpers/auth.helper');
 const prisma = require('../../src/config/db');
 
 describe('Workspace Integration Tests', () => {
-    let token, user;
+    let token;
+    let user;
 
+    const workspaceData = {
+        name: 'Development WS',
+        visibility: 'PRIVATE',
+    };
+
+    // ua: отримання токена авторизації перед кожним тестом
     beforeEach(async () => {
-        // ua: отримання авторизованого користувача перед кожним тестом
         const auth = await getAuthToken();
         token = auth.token;
         user = auth.user;
     });
 
-    // ua: тести для створення воркспейсу
+    // ua: допоміжна функція для створення воркспейсу через API
+    const createWorkspace = async (authToken = token, data = workspaceData) => {
+        return request(app)
+            .post('/api/workspaces')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(data);
+    };
+
     describe('POST /api/workspaces', () => {
-        test('should successfully create workspace and assign Owner role', async () => {
-            const res = await request(app)
-                .post('/api/workspaces')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ name: 'Development WS', visibility: 'PRIVATE' });
+        test('should successfully create a new workspace', async () => {
+            const response = await createWorkspace();
 
-            expect(res.statusCode).toBe(201);
-            expect(res.body.data.workspace.name).toBe('Development WS');
-
-            // ua: перевірка чи створився запис у UserWorkspace з роллю овнера
-            const membership = await prisma.userWorkspace.findUnique({
-                where: { userId_workspaceId: { userId: user.id, workspaceId: res.body.data.workspace.id } }
+            expect(response.status).toBe(201);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.workspace).toMatchObject({
+                name: workspaceData.name,
+                visibility: workspaceData.visibility,
+                ownerId: user.id,
             });
+        });
+
+        test('should automatically assign Owner role to workspace creator', async () => {
+            const response = await createWorkspace();
+            const workspaceId = response.body.data.workspace.id;
+
+            const membership = await prisma.userWorkspace.findFirst({
+                where: {
+                    userId: user.id,
+                    workspaceId,
+                },
+            });
+
+            expect(membership).toBeTruthy();
             expect(membership.role).toBe('Owner');
         });
-    });
 
-    // ua: тести для апдейту воркспейсу
-    describe('PATCH /api/workspaces/:id', () => {
-        test('should allow Owner to update workspace details', async () => {
-            // ua: створення воркспейсу через Prisma
-            const ws = await prisma.workspace.create({
-                data: {
-                    name: 'Old Name',
-                    ownerId: user.id,
-                    users: { create: { userId: user.id, role: 'Owner' } }
-                }
+        test('should return 400 when workspace data is invalid', async () => {
+            const response = await createWorkspace(token, {
+                name: '',
+                visibility: 'INVALID',
             });
 
-            const res = await request(app)
-                .patch(`/api/workspaces/${ws.id}`)
-                .set('Authorization', `Bearer ${token}`)
-                .send({ name: 'New Shiny Name' });
-
-            expect(res.statusCode).toBe(200);
-
-            expect(res.body.data.workspace.name).toBe('New Shiny Name');
+            expect(response.status).toBe(400);
         });
 
-        test('should return 403 if non-owner tries to update', async () => {
-            const otherAuth = await getAuthToken('other@test.com');
-            const otherWs = await prisma.workspace.create({
-                data: { name: 'Secret WS', ownerId: otherAuth.user.id }
-            });
+        test('should return 401 when user is not authenticated', async () => {
+            const response = await request(app)
+                .post('/api/workspaces')
+                .send(workspaceData);
 
-            const res = await request(app)
-                .patch(`/api/workspaces/${otherWs.id}`)
-                .set('Authorization', `Bearer ${token}`)
-                .send({ name: 'Hacked Name' });
-
-            expect(res.statusCode).toBe(403);
+            expect(response.status).toBe(401);
         });
     });
 
-    // ua: тести для видалення воркспейсу
-    describe('DELETE /api/workspaces/:id', () => {
-        test('should successfully delete workspace by Owner', async () => {
-            const ws = await prisma.workspace.create({
-                data: {
-                    name: 'To delete',
-                    ownerId: user.id,
-                    users: { create: { userId: user.id, role: 'Owner' } }
-                }
+    describe('GET /api/workspaces', () => {
+        test('should return all workspaces belonging to current user', async () => {
+            await createWorkspace(token, {
+                name: 'First Workspace',
+                visibility: 'PRIVATE',
             });
 
-            const res = await request(app)
-                .delete(`/api/workspaces/${ws.id}`)
+            await createWorkspace(token, {
+                name: 'Second Workspace',
+                visibility: 'PUBLIC',
+            });
+
+            const response = await request(app)
+                .get('/api/workspaces')
                 .set('Authorization', `Bearer ${token}`);
 
-            expect(res.statusCode).toBe(204);
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.workspaces).toHaveLength(2);
 
-            const wsInDb = await prisma.workspace.findUnique({ where: { id: ws.id } });
-            expect(wsInDb).toBeNull();
+            expect(
+                response.body.data.workspaces.map((workspace) => workspace.name),
+            ).toEqual(expect.arrayContaining([
+                'First Workspace',
+                'Second Workspace',
+            ]));
+        });
+
+        test('should return an empty list when user has no workspaces', async () => {
+            const response = await request(app)
+                .get('/api/workspaces')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.workspaces).toEqual([]);
+            expect(response.body.data.pagination).toMatchObject({
+                page: 1,
+                limit: 10,
+                totalCount: 0,
+                totalPages: 0,
+            });
+        });
+
+        test('should return correct pagination metadata', async () => {
+            await createWorkspace(token, {
+                name: 'Workspace 1',
+                visibility: 'PRIVATE',
+            });
+
+            await createWorkspace(token, {
+                name: 'Workspace 2',
+                visibility: 'PRIVATE',
+            });
+
+            await createWorkspace(token, {
+                name: 'Workspace 3',
+                visibility: 'PRIVATE',
+            });
+
+            const response = await request(app)
+                .get('/api/workspaces?page=1&limit=2')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.workspaces).toHaveLength(2);
+            expect(response.body.data.pagination).toMatchObject({
+                page: 1,
+                limit: 2,
+                totalCount: 3,
+                totalPages: 2,
+            });
+        });
+
+        test('should not return workspaces belonging to other users', async () => {
+            await createWorkspace(token, {
+                name: 'My Workspace',
+                visibility: 'PRIVATE',
+            });
+
+            const otherAuth = await getAuthToken('other@test.com');
+
+            await createWorkspace(otherAuth.token, {
+                name: 'Other User Workspace',
+                visibility: 'PUBLIC',
+            });
+
+            const response = await request(app)
+                .get('/api/workspaces')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.workspaces).toHaveLength(1);
+            expect(response.body.data.workspaces[0].name).toBe('My Workspace');
+        });
+
+        test('should return 401 when user is not authenticated', async () => {
+            const response = await request(app)
+                .get('/api/workspaces');
+
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('PATCH /api/workspaces/:id', () => {
+        test('should successfully update workspace when current user is the owner', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const response = await request(app)
+                .patch(`/api/workspaces/${workspaceId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({
+                    name: 'Updated Workspace',
+                    visibility: 'PUBLIC',
+                });
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.workspace).toMatchObject({
+                id: workspaceId,
+                name: 'Updated Workspace',
+                visibility: 'PUBLIC',
+                ownerId: user.id,
+            });
+        });
+
+        test('should return 403 when another user tries to update workspace', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const otherAuth = await getAuthToken('other@test.com');
+
+            const response = await request(app)
+                .patch(`/api/workspaces/${workspaceId}`)
+                .set('Authorization', `Bearer ${otherAuth.token}`)
+                .send({
+                    name: 'Unauthorized Update',
+                });
+
+            expect(response.status).toBe(403);
+        });
+
+        test('should return 403 when workspace does not exist', async () => {
+            const response = await request(app)
+                .patch('/api/workspaces/clxxxxxxxxxxxxxxxxxxxxxxxx')
+                .set('Authorization', `Bearer ${token}`)
+                .send({ name: 'Updated Workspace' });
+
+            expect(response.status).toBe(403);
+        });
+
+        test('should return 400 when update data is invalid', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const response = await request(app)
+                .patch(`/api/workspaces/${workspaceId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({
+                    visibility: 'INVALID',
+                });
+
+            expect(response.status).toBe(400);
+        });
+
+        test('should return 401 when user is not authenticated', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const response = await request(app)
+                .patch(`/api/workspaces/${workspaceId}`)
+                .send({
+                    name: 'Updated Workspace',
+                });
+
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('DELETE /api/workspaces/:id', () => {
+        test('should successfully delete workspace when current user is the owner', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const response = await request(app)
+                .delete(`/api/workspaces/${workspaceId}`)
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(response.status).toBe(204);
+
+            const deletedWorkspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+            });
+
+            expect(deletedWorkspace).toBeNull();
+        });
+
+        test('should return 403 when another user tries to delete workspace', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const otherAuth = await getAuthToken('other@test.com');
+
+            const response = await request(app)
+                .delete(`/api/workspaces/${workspaceId}`)
+                .set('Authorization', `Bearer ${otherAuth.token}`);
+
+            expect(response.status).toBe(403);
+
+            const workspace = await prisma.workspace.findUnique({
+                where: { id: workspaceId },
+            });
+
+            expect(workspace).not.toBeNull();
+        });
+
+        test('should return 403 when workspace does not exist', async () => {
+            const response = await request(app)
+                .delete('/api/workspaces/non-existent-workspace')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(response.status).toBe(403);
+        });
+
+        test('should return 401 when user is not authenticated', async () => {
+            const created = await createWorkspace();
+            const workspaceId = created.body.data.workspace.id;
+
+            const response = await request(app)
+                .delete(`/api/workspaces/${workspaceId}`);
+
+            expect(response.status).toBe(401);
         });
     });
 });
