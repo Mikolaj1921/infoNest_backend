@@ -6,7 +6,10 @@ const { protect } = require('../middlewares/auth.middleware');
 const { restrictTo } = require('../middlewares/role.middleware');
 const validate = require('../middlewares/validate.middleware');
 // validations
-const { createCategorySchema } = require('../validations/category.validation');
+const {
+  createCategorySchema,
+  updateCategorySchema,
+} = require('../validations/category.validation');
 
 const router = express.Router();
 
@@ -33,6 +36,7 @@ router
   .route('/:id')
   .patch(
     restrictTo('Owner', 'Admin', 'Editor'), // ua: захист оновлення
+    validate(updateCategorySchema),
     categoryController.updateCategory,
   )
   .delete(
